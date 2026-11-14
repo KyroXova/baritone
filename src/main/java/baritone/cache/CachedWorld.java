@@ -26,12 +26,9 @@ import baritone.api.utils.Helper;
 import com.google.common.cache.CacheBuilder;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.dimension.DimensionType;
+import baritone.api.utils.BetterBlockPos;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.chunk.Chunk;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,19 +63,17 @@ public final class CachedWorld implements ICachedWorld, Helper {
      * Queue of positions to pack. Refers to the toPackMap, in that every element of this queue will be a
      * key in that map.
      */
-    private final LinkedBlockingQueue<ChunkPos> toPackQueue = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<ChunkCoordIntPair> toPackQueue = new LinkedBlockingQueue<>();
 
     /**
      * All chunk positions pending packing. This map will be updated in-place if a new update to the chunk occurs
      * while waiting in the queue for the packer thread to get to it.
      */
-    private final Map<ChunkPos, LevelChunk> toPackMap = CacheBuilder.newBuilder().softValues().<ChunkPos, LevelChunk>build().asMap();
+    private final Map<ChunkCoordIntPair, Chunk> toPackMap = CacheBuilder.newBuilder().softValues().<ChunkCoordIntPair, Chunk>build().asMap();
 
-    private final DimensionType dimension;
+    private final int dimensionId;
 
-    private final ResourceKey<Level> dimensionId;
-
-    CachedWorld(Path directory, DimensionType dimension, ResourceKey<Level> dimensionId) {
+    CachedWorld(Path directory, int dimensionId) {
         if (!Files.exists(directory)) {
             try {
                 Files.createDirectories(directory);
@@ -86,7 +81,6 @@ public final class CachedWorld implements ICachedWorld, Helper {
             }
         }
         this.directory = directory.toString();
-        this.dimension = dimension;
         this.dimensionId = dimensionId;
         System.out.println("Cached world directory: " + directory);
         Baritone.getExecutor().execute(new PackerThread());
@@ -107,9 +101,10 @@ public final class CachedWorld implements ICachedWorld, Helper {
     }
 
     @Override
-    public final void queueForPacking(LevelChunk chunk) {
-        if (toPackMap.put(chunk.getPos(), chunk) == null) {
-            toPackQueue.add(chunk.getPos());
+    public final void queueForPacking(Chunk chunk) {
+        ChunkCoordIntPair pos = new ChunkCoordIntPair(chunk.xPosition, chunk.zPosition);
+        if (toPackMap.put(pos, chunk) == null) {
+            toPackQueue.add(pos);
         }
     }
 
@@ -127,8 +122,8 @@ public final class CachedWorld implements ICachedWorld, Helper {
     }
 
     @Override
-    public final ArrayList<BlockPos> getLocationsOf(String block, int maximum, int centerX, int centerZ, int maxRegionDistanceSq) {
-        ArrayList<BlockPos> res = new ArrayList<>();
+    public final ArrayList<BetterBlockPos> getLocationsOf(String block, int maximum, int centerX, int centerZ, int maxRegionDistanceSq) {
+        ArrayList<BetterBlockPos> res = new ArrayList<>();
         int centerRegionX = centerX >> 9;
         int centerRegionZ = centerZ >> 9;
 
@@ -192,7 +187,7 @@ public final class CachedWorld implements ICachedWorld, Helper {
         if (!Baritone.settings().pruneRegionsFromRAM.value) {
             return;
         }
-        BlockPos pruneCenter = guessPosition();
+        BetterBlockPos pruneCenter = guessPosition();
         for (CachedRegion region : allRegions()) {
             if (region == null) {
                 continue;
@@ -210,7 +205,7 @@ public final class CachedWorld implements ICachedWorld, Helper {
     /**
      * If we are still in this world and dimension, return player feet, otherwise return most recently modified chunk
      */
-    private BlockPos guessPosition() {
+    private BetterBlockPos guessPosition() {
         for (IBaritone ibaritone : BaritoneAPI.getProvider().getAllBaritones()) {
             IWorldData data = ibaritone.getWorldProvider().getCurrentWorld();
             if (data != null && data.getCachedWorld() == this && ibaritone.getPlayerContext().player() != null) {
@@ -231,9 +226,9 @@ public final class CachedWorld implements ICachedWorld, Helper {
             }
         }
         if (mostRecentlyModified == null) {
-            return new BlockPos(0, 0, 0);
+            return new BetterBlockPos(0, 0, 0);
         }
-        return new BlockPos((mostRecentlyModified.x << 4) + 8, 0, (mostRecentlyModified.z << 4) + 8);
+        return new BetterBlockPos((mostRecentlyModified.x << 4) + 8, 0, (mostRecentlyModified.z << 4) + 8);
     }
 
     private synchronized List<CachedRegion> allRegions() {
@@ -267,7 +262,7 @@ public final class CachedWorld implements ICachedWorld, Helper {
      */
     private synchronized CachedRegion getOrCreateRegion(int regionX, int regionZ) {
         return cachedRegions.computeIfAbsent(getRegionID(regionX, regionZ), id -> {
-            CachedRegion newRegion = new CachedRegion(regionX, regionZ, dimension, dimensionId);
+            CachedRegion newRegion = new CachedRegion(regionX, regionZ, dimensionId);
             newRegion.load(this.directory);
             return newRegion;
         });
@@ -309,8 +304,9 @@ public final class CachedWorld implements ICachedWorld, Helper {
         public void run() {
             while (true) {
                 try {
-                    ChunkPos pos = toPackQueue.take();
-                    LevelChunk chunk = toPackMap.remove(pos);
+                    ChunkCoordIntPair pos = toPackQueue.take();
+                    Chunk chunk = toPackMap.remove(pos);
+                    if (chunk == null) continue;
                     if (toPackQueue.size() > Baritone.settings().chunkPackerQueueMaxSize.value) {
                         continue;
                     }

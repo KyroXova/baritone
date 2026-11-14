@@ -17,10 +17,9 @@
 
 package baritone.utils.accessor;
 
-import net.minecraft.client.multiplayer.ClientChunkCache;
+import java.util.Map;
+import net.minecraft.world.chunk.Chunk;
 
 public interface IClientChunkProvider {
-    ClientChunkCache createThreadSafeCopy();
-
-    IChunkArray extractReferenceArray();
+    Map<Long, Chunk> snapshotLoadedChunks();
 }

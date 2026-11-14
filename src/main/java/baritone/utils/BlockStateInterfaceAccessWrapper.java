@@ -1,67 +1,37 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
-
 package baritone.utils;
 
-import javax.annotation.Nullable;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.FluidState;
+import net.minecraft.block.Block;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraftforge.common.util.ForgeDirection;
 
-/**
- * @author Brady
- * @since 11/5/2019
- */
-@SuppressWarnings("NullableProblems")
-public final class BlockStateInterfaceAccessWrapper implements BlockGetter {
-
+/** Exposes the pathing block view to legacy block queries. */
+public final class BlockStateInterfaceAccessWrapper implements IBlockAccess {
     private final BlockStateInterface bsi;
 
     BlockStateInterfaceAccessWrapper(BlockStateInterface bsi) {
         this.bsi = bsi;
     }
 
-    @Nullable
-    @Override
-    public BlockEntity getBlockEntity(BlockPos pos) {
-        return null;
+    @Override public Block getBlock(int x, int y, int z) { return bsi.get0(x, y, z).getBlock(); }
+    @Override public int getBlockMetadata(int x, int y, int z) { return bsi.get0(x, y, z).getMetadata(); }
+    @Override public TileEntity getTileEntity(int x, int y, int z) { return null; }
+    @Override public int getLightBrightnessForSkyBlocks(int x, int y, int z, int minimum) {
+        return bsi.world.getLightBrightnessForSkyBlocks(x, y, z, minimum);
     }
-
-    @Override
-    public BlockState getBlockState(BlockPos pos) {
-        // BlockStateInterface#get0(BlockPos) btfo!
-        return this.bsi.get0(pos.getX(), pos.getY(), pos.getZ());
+    @Override public int isBlockProvidingPowerTo(int x, int y, int z, int side) {
+        return getBlock(x, y, z).isProvidingWeakPower(this, x, y, z, side);
     }
-
-    @Override
-    public FluidState getFluidState(BlockPos blockPos) {
-        return getBlockState(blockPos).getFluidState();
+    @Override public boolean isAirBlock(int x, int y, int z) { return getBlock(x, y, z).isAir(this, x, y, z); }
+    @Override public BiomeGenBase getBiomeGenForCoords(int x, int z) { return bsi.world.getBiomeGenForCoords(x, z); }
+    @Override public int getHeight() { return 256; }
+    @Override public boolean extendedLevelsInChunkCache() { return false; }
+    @Override public boolean isSideSolid(int x, int y, int z, ForgeDirection side, boolean defaultValue) {
+        if (y < 0 || y >= 256 || !bsi.isLoaded(x, z)) return defaultValue;
+        return getBlock(x, y, z).isSideSolid(this, x, y, z, side);
     }
-
-    @Override
-    public int getHeight() {
-        return bsi.world.getHeight();
-    }
-
-    @Override
-    public int getMinY() {
-        return bsi.world.getMinY();
-    }
-
 }

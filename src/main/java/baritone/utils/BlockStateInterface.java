@@ -5,171 +5,114 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 package baritone.utils;
 
 import baritone.Baritone;
+import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
 import baritone.api.utils.IPlayerContext;
 import baritone.cache.CachedRegion;
 import baritone.cache.WorldData;
 import baritone.utils.accessor.IClientChunkProvider;
 import baritone.utils.pathing.BetterWorldBorder;
-import net.minecraft.client.multiplayer.ClientChunkCache;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
+import java.util.Map;
+import net.minecraft.block.Block;
+import net.minecraft.client.multiplayer.ChunkProviderClient;
+import net.minecraft.init.Blocks;
+import net.minecraft.world.ChunkCoordIntPair;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
-/**
- * Wraps get for chuck caching capability
- *
- * @author leijurv
- */
+/** Access to loaded client chunks and Baritone's cached regions. */
 public class BlockStateInterface {
-
-    private final ClientChunkCache provider;
+    private final ChunkProviderClient provider;
+    private final Map<Long, Chunk> loadedSnapshot;
     private final WorldData worldData;
-    protected final Level world;
-    public final BlockPos.MutableBlockPos isPassableBlockPos;
-    public final BlockGetter access;
+    protected final World world;
+    public final IBlockAccess access;
     public final BetterWorldBorder worldBorder;
-
-    private LevelChunk prev = null;
-    private CachedRegion prevCached = null;
-
     private final boolean useTheRealWorld;
-
-    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    private Chunk previousChunk;
+    private CachedRegion previousRegion;
+    private static final BlockState AIR = new BlockState(Blocks.air, 0);
 
     public BlockStateInterface(IPlayerContext ctx) {
         this(ctx, false);
     }
 
     public BlockStateInterface(IPlayerContext ctx, boolean copyLoadedChunks) {
+        if (!ctx.minecraft().func_152345_ab()) {
+            throw new IllegalStateException("BlockStateInterface must be constructed on the client thread");
+        }
         this.world = ctx.world();
-        this.worldBorder = new BetterWorldBorder();
         this.worldData = (WorldData) ctx.worldData();
-        if (copyLoadedChunks) {
-            this.provider = ((IClientChunkProvider) world.getChunkSource()).createThreadSafeCopy();
-        } else {
-            this.provider = (ClientChunkCache) world.getChunkSource();
-        }
+        this.provider = (ChunkProviderClient) world.getChunkProvider();
+        this.loadedSnapshot = copyLoadedChunks
+                ? ((IClientChunkProvider) provider).snapshotLoadedChunks() : null;
         this.useTheRealWorld = !Baritone.settings().pathThroughCachedOnly.value;
-        if (!ctx.minecraft().isSameThread()) {
-            throw new IllegalStateException("BlockStateInterface must be constructed on the main thread");
-        }
-        this.isPassableBlockPos = new BlockPos.MutableBlockPos();
+        this.worldBorder = new BetterWorldBorder();
         this.access = new BlockStateInterfaceAccessWrapper(this);
     }
 
-    public boolean worldContainsLoadedChunk(int blockX, int blockZ) {
-        return provider.hasChunk(blockX >> 4, blockZ >> 4);
+    private Chunk loadedChunk(int chunkX, int chunkZ) {
+        if (loadedSnapshot != null) {
+            return loadedSnapshot.get(ChunkCoordIntPair.chunkXZ2Int(chunkX, chunkZ));
+        }
+        Chunk chunk = provider.provideChunk(chunkX, chunkZ);
+        return chunk.isEmpty() ? null : chunk;
     }
 
-    public static Block getBlock(IPlayerContext ctx, BlockPos pos) { // won't be called from the pathing thread because the pathing thread doesn't make a single blockpos pog
+    public boolean worldContainsLoadedChunk(int blockX, int blockZ) {
+        return loadedChunk(blockX >> 4, blockZ >> 4) != null;
+    }
+
+    public static Block getBlock(IPlayerContext ctx, BetterBlockPos pos) {
         return get(ctx, pos).getBlock();
     }
 
-    public static BlockState get(IPlayerContext ctx, BlockPos pos) {
-        return new BlockStateInterface(ctx).get0(pos.getX(), pos.getY(), pos.getZ()); // immense iq
-        // can't just do world().get because that doesn't work for out of bounds
-        // and toBreak and stuff fails when the movement is instantiated out of load range but it's not able to BlockStateInterface.get what it's going to walk on
+    public static BlockState get(IPlayerContext ctx, BetterBlockPos pos) {
+        return new BlockStateInterface(ctx).get0(pos);
     }
 
-    public BlockState get0(BlockPos pos) {
-        return get0(pos.getX(), pos.getY(), pos.getZ());
+    public BlockState get0(BetterBlockPos pos) {
+        return get0(pos.x, pos.y, pos.z);
     }
 
-    public BlockState get0(int x, int y, int z) { // Mickey resigned
-        y -= world.dimensionType().minY();
-        // Invalid vertical position
-        if (y < 0 || y >= world.dimensionType().height()) {
-            return AIR;
-        }
-
+    public BlockState get0(int x, int y, int z) {
+        if (y < 0 || y >= 256) return AIR;
         if (useTheRealWorld) {
-            LevelChunk cached = prev;
-            // there's great cache locality in block state lookups
-            // generally it's within each movement
-            // if it's the same chunk as last time
-            // we can just skip the mc.world.getChunk lookup
-            // which is a Long2ObjectOpenHashMap.get
-            // see issue #113
-            if (cached != null && cached.getPos().x() == x >> 4 && cached.getPos().z() == z >> 4) {
-                return getFromChunk(cached, x, y, z);
+            Chunk chunk = previousChunk;
+            if (loadedSnapshot == null || chunk == null || chunk.xPosition != x >> 4 || chunk.zPosition != z >> 4) {
+                chunk = loadedChunk(x >> 4, z >> 4);
+                previousChunk = chunk;
             }
-            LevelChunk chunk = provider.getChunk(x >> 4, z >> 4, ChunkStatus.FULL, false);
-            if (chunk != null && !chunk.isEmpty()) {
-                prev = chunk;
-                return getFromChunk(chunk, x, y, z);
-            }
+            if (chunk != null) return getFromChunk(chunk, x, y, z);
         }
-        // same idea here, skip the Long2ObjectOpenHashMap.get if at all possible
-        // except here, it's 512x512 tiles instead of 16x16, so even better repetition
-        CachedRegion cached = prevCached;
-        if (cached == null || cached.getX() != x >> 9 || cached.getZ() != z >> 9) {
-            if (worldData == null) {
-                return AIR;
-            }
-            CachedRegion region = worldData.cache.getRegion(x >> 9, z >> 9);
-            if (region == null) {
-                return AIR;
-            }
-            prevCached = region;
-            cached = region;
-        }
-        BlockState type = cached.getBlock(x & 511, y + world.dimensionType().minY(), z & 511);
-        if (type == null) {
-            return AIR;
-        }
-        return type;
+        CachedRegion region = cachedRegion(x, z);
+        if (region == null) return AIR;
+        BlockState state = region.getBlock(x & 511, y, z & 511);
+        return state == null ? AIR : state;
     }
 
     public boolean isLoaded(int x, int z) {
-        LevelChunk prevChunk = prev;
-        if (prevChunk != null && prevChunk.getPos().x() == x >> 4 && prevChunk.getPos().z() == z >> 4) {
-            return true;
-        }
-        prevChunk = provider.getChunk(x >> 4, z >> 4, ChunkStatus.FULL, false);
-        if (prevChunk != null && !prevChunk.isEmpty()) {
-            prev = prevChunk;
-            return true;
-        }
-        CachedRegion prevRegion = prevCached;
-        if (prevRegion != null && prevRegion.getX() == x >> 9 && prevRegion.getZ() == z >> 9) {
-            return prevRegion.isCached(x & 511, z & 511);
-        }
-        if (worldData == null) {
-            return false;
-        }
-        prevRegion = worldData.cache.getRegion(x >> 9, z >> 9);
-        if (prevRegion == null) {
-            return false;
-        }
-        prevCached = prevRegion;
-        return prevRegion.isCached(x & 511, z & 511);
+        if (loadedChunk(x >> 4, z >> 4) != null) return true;
+        CachedRegion region = cachedRegion(x, z);
+        return region != null && region.isCached(x & 511, z & 511);
     }
 
-    // get the block at x,y,z from this chunk WITHOUT creating a single blockpos object
-    public static BlockState getFromChunk(LevelChunk chunk, int x, int y, int z) {
-        LevelChunkSection section = chunk.getSections()[y >> 4];
-        if (section.hasOnlyAir()) {
-            return AIR;
+    private CachedRegion cachedRegion(int x, int z) {
+        CachedRegion region = previousRegion;
+        if (region == null || region.getX() != x >> 9 || region.getZ() != z >> 9) {
+            region = worldData == null ? null : worldData.cache.getRegion(x >> 9, z >> 9);
+            previousRegion = region;
         }
-        return section.getBlockState(x & 15, y & 15, z & 15);
+        return region;
+    }
+
+    public static BlockState getFromChunk(Chunk chunk, int x, int y, int z) {
+        if (y < 0 || y >= 256) return AIR;
+        return new BlockState(chunk.getBlock(x & 15, y, z & 15), chunk.getBlockMetadata(x & 15, y, z & 15));
     }
 }

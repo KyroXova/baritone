@@ -20,11 +20,8 @@ package baritone.cache;
 import baritone.Baritone;
 import baritone.api.cache.ICachedRegion;
 import baritone.api.utils.BlockUtils;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.dimension.DimensionType;
+import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -46,7 +43,7 @@ public final class CachedRegion implements ICachedRegion {
     /**
      * Magic value to detect invalid cache files, or incompatible cache files saved in an old version of Baritone
      */
-    private static final int CACHED_REGION_MAGIC = 456022911;
+    private static final int CACHED_REGION_MAGIC = 456022912;
 
     /**
      * All of the chunks in this region: A 32x32 array of them.
@@ -63,29 +60,26 @@ public final class CachedRegion implements ICachedRegion {
      */
     private final int z;
 
-    private final DimensionType dimension;
-
-    private final ResourceKey<Level> dimensionId;
+    private final int dimensionId;
 
     /**
      * Has this region been modified since its most recent load or save
      */
     private boolean hasUnsavedChanges;
 
-    CachedRegion(int x, int z, DimensionType dimension, ResourceKey<Level> dimensionId) {
+    CachedRegion(int x, int z, int dimensionId) {
         this.x = x;
         this.z = z;
         this.hasUnsavedChanges = false;
-        this.dimension = dimension;
         this.dimensionId = dimensionId;
     }
 
     @Override
     public final BlockState getBlock(int x, int y, int z) {
-        int adjY = y - dimension.minY();
+        if (y < 0 || y >= 256) return null;
         CachedChunk chunk = chunks[x >> 4][z >> 4];
         if (chunk != null) {
-            return chunk.getBlock(x & 15, adjY, z & 15, dimension, dimensionId);
+            return chunk.getBlock(x & 15, y, z & 15, dimensionId);
         }
         return null;
     }
@@ -95,14 +89,14 @@ public final class CachedRegion implements ICachedRegion {
         return chunks[x >> 4][z >> 4] != null;
     }
 
-    public final ArrayList<BlockPos> getLocationsOf(String block) {
-        ArrayList<BlockPos> res = new ArrayList<>();
+    public final ArrayList<BetterBlockPos> getLocationsOf(String block) {
+        ArrayList<BetterBlockPos> res = new ArrayList<>();
         for (int chunkX = 0; chunkX < 32; chunkX++) {
             for (int chunkZ = 0; chunkZ < 32; chunkZ++) {
                 if (chunks[chunkX][chunkZ] == null) {
                     continue;
                 }
-                ArrayList<BlockPos> locs = chunks[chunkX][chunkZ].getAbsoluteBlocks(block);
+                ArrayList<BetterBlockPos> locs = chunks[chunkX][chunkZ].getAbsoluteBlocks(block);
                 if (locs != null) {
                     res.addAll(locs);
                 }
@@ -158,6 +152,7 @@ public final class CachedRegion implements ICachedRegion {
                         if (chunks[x][z] != null) {
                             for (int i = 0; i < 256; i++) {
                                 out.writeUTF(BlockUtils.blockToString(chunks[x][z].getOverview()[i].getBlock()));
+                                out.writeByte(chunks[x][z].getOverview()[i].getMetadata());
                             }
                         }
                     }
@@ -165,14 +160,15 @@ public final class CachedRegion implements ICachedRegion {
                 for (int x = 0; x < 32; x++) {
                     for (int z = 0; z < 32; z++) {
                         if (chunks[x][z] != null) {
-                            Map<String, List<BlockPos>> locs = chunks[x][z].getRelativeBlocks();
+                            Map<String, List<BetterBlockPos>> locs = chunks[x][z].getRelativeBlocks();
                             out.writeShort(locs.entrySet().size());
-                            for (Map.Entry<String, List<BlockPos>> entry : locs.entrySet()) {
+                            for (Map.Entry<String, List<BetterBlockPos>> entry : locs.entrySet()) {
                                 out.writeUTF(entry.getKey());
                                 out.writeShort(entry.getValue().size());
-                                for (BlockPos pos : entry.getValue()) {
+                                for (BetterBlockPos pos : entry.getValue()) {
                                     out.writeByte((byte) (pos.getZ() << 4 | pos.getX()));
-                                    out.writeInt(pos.getY()-dimension.minY());
+                                    out.writeInt(pos.getY());
+                                    out.writeByte(chunks[x][z].getSpecialMetadata(pos));
                                 }
                             }
                         }
@@ -222,7 +218,8 @@ public final class CachedRegion implements ICachedRegion {
                 }
                 boolean[][] present = new boolean[32][32];
                 BitSet[][] bitSets = new BitSet[32][32];
-                Map<String, List<BlockPos>>[][] location = new Map[32][32];
+                Map<String, List<BetterBlockPos>>[][] location = new Map[32][32];
+                Map<Integer, Integer>[][] specialMetadata = new Map[32][32];
                 BlockState[][][] overview = new BlockState[32][32][];
                 long[][] cacheTimestamp = new long[32][32];
                 for (int x = 0; x < 32; x++) {
@@ -230,10 +227,11 @@ public final class CachedRegion implements ICachedRegion {
                         int isChunkPresent = in.read();
                         switch (isChunkPresent) {
                             case CHUNK_PRESENT:
-                                byte[] bytes = new byte[CachedChunk.sizeInBytes(CachedChunk.size(dimension.height()))];
+                                byte[] bytes = new byte[CachedChunk.sizeInBytes(CachedChunk.size(256))];
                                 in.readFully(bytes);
                                 bitSets[x][z] = BitSet.valueOf(bytes);
                                 location[x][z] = new HashMap<>();
+                                specialMetadata[x][z] = new HashMap<>();
                                 //this is top block in columns
                                 overview[x][z] = new BlockState[256];
                                 present[x][z] = true;
@@ -249,7 +247,7 @@ public final class CachedRegion implements ICachedRegion {
                     for (int z = 0; z < 32; z++) {
                         if (present[x][z]) {
                             for (int i = 0; i < 256; i++) {
-                                overview[x][z][i] = BlockUtils.stringToBlockRequired(in.readUTF()).defaultBlockState();
+                                overview[x][z][i] = new BlockState(BlockUtils.stringToBlockRequired(in.readUTF()), in.readUnsignedByte());
                             }
                         }
                     }
@@ -265,7 +263,7 @@ public final class CachedRegion implements ICachedRegion {
                             for (int i = 0; i < numSpecialBlockTypes; i++) {
                                 String blockName = in.readUTF();
                                 BlockUtils.stringToBlockRequired(blockName);
-                                List<BlockPos> locs = new ArrayList<>();
+                                List<BetterBlockPos> locs = new ArrayList<>();
                                 location[x][z].put(blockName, locs);
                                 int numLocations = in.readShort() & 0xffff;
                                 if (numLocations == 0) {
@@ -277,7 +275,8 @@ public final class CachedRegion implements ICachedRegion {
                                     int X = xz & 0x0f;
                                     int Z = (xz >>> 4) & 0x0f;
                                     int Y = in.readInt();
-                                    locs.add(new BlockPos(X, Y+dimension.minY(), Z));
+                                    locs.add(new BetterBlockPos(X, Y, Z));
+                                    specialMetadata[x][z].put(CachedChunk.getPositionIndex(X, Y, Z), in.readUnsignedByte());
                                 }
                             }
                         }
@@ -298,7 +297,7 @@ public final class CachedRegion implements ICachedRegion {
                             int regionZ = this.z;
                             int chunkX = x + 32 * regionX;
                             int chunkZ = z + 32 * regionZ;
-                            this.chunks[x][z] = new CachedChunk(chunkX, chunkZ, dimension.height(), bitSets[x][z], overview[x][z], location[x][z], cacheTimestamp[x][z]);
+                            this.chunks[x][z] = new CachedChunk(chunkX, chunkZ, 256, bitSets[x][z], overview[x][z], location[x][z], specialMetadata[x][z], cacheTimestamp[x][z]);
                         }
                     }
                 }

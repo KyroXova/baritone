@@ -21,13 +21,10 @@ import baritone.api.utils.BlockUtils;
 import baritone.utils.pathing.PathingBlockType;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.dimension.DimensionType;
+import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -42,46 +39,13 @@ public final class CachedChunk {
 
     public static final ImmutableSet<Block> BLOCKS_TO_KEEP_TRACK_OF = new ImmutableSet.Builder<Block>()
         .add(
-            Blocks.ENDER_CHEST,
-            Blocks.FURNACE,
-            Blocks.CHEST,
-            Blocks.TRAPPED_CHEST,
-            Blocks.END_PORTAL,
-            Blocks.END_PORTAL_FRAME,
-            Blocks.SPAWNER,
-            Blocks.BARRIER,
-            Blocks.OBSERVER,
-            Blocks.NETHER_PORTAL,
-            Blocks.HOPPER,
-            Blocks.BEACON,
-            Blocks.BREWING_STAND,
-
-// TODO: Maybe add a predicate for blocks to keep track of?
-// This should really not need to happen
-            Blocks.CREEPER_HEAD,
-            Blocks.CREEPER_WALL_HEAD,
-            Blocks.DRAGON_HEAD,
-            Blocks.DRAGON_WALL_HEAD,
-            Blocks.PLAYER_HEAD,
-            Blocks.PLAYER_WALL_HEAD,
-            Blocks.ZOMBIE_HEAD,
-            Blocks.ZOMBIE_WALL_HEAD,
-            Blocks.SKELETON_SKULL,
-            Blocks.SKELETON_WALL_SKULL,
-            Blocks.WITHER_SKELETON_SKULL,
-            Blocks.WITHER_SKELETON_WALL_SKULL,
-            Blocks.ENCHANTING_TABLE,
-            Blocks.ANVIL,
-            Blocks.DRAGON_EGG,
-            Blocks.JUKEBOX,
-            Blocks.END_GATEWAY,
-            Blocks.COBWEB,
-            Blocks.NETHER_WART,
-            Blocks.LADDER,
-            Blocks.VINE
-        ).addAll(Blocks.DYED_SHULKER_BOX.asList())
-        .addAll(Blocks.BED.asList())
-        .build();
+            Blocks.ender_chest, Blocks.furnace, Blocks.lit_furnace, Blocks.chest,
+            Blocks.trapped_chest, Blocks.end_portal, Blocks.end_portal_frame,
+            Blocks.mob_spawner, Blocks.portal, Blocks.hopper, Blocks.beacon,
+            Blocks.brewing_stand, Blocks.skull, Blocks.enchanting_table,
+            Blocks.anvil, Blocks.dragon_egg, Blocks.jukebox, Blocks.web,
+            Blocks.nether_wart, Blocks.ladder, Blocks.vine, Blocks.bed
+        ).build();
 
     public final int height;
 
@@ -123,11 +87,12 @@ public final class CachedChunk {
 
     private final int[] heightMap;
 
-    private final Map<String, List<BlockPos>> specialBlockLocations;
+    private final Map<String, List<BetterBlockPos>> specialBlockLocations;
+    private final Map<Integer, Integer> specialMetadata;
 
     public final long cacheTimestamp;
 
-    CachedChunk(int x, int z, int height, BitSet data, BlockState[] overview, Map<String, List<BlockPos>> specialBlockLocations, long cacheTimestamp) {
+    CachedChunk(int x, int z, int height, BitSet data, BlockState[] overview, Map<String, List<BetterBlockPos>> specialBlockLocations, Map<Integer, Integer> specialMetadata, long cacheTimestamp) {
         this.size = size(height);
         this.sizeInBytes = sizeInBytes(size);
         validateSize(data);
@@ -139,6 +104,7 @@ public final class CachedChunk {
         this.overview = overview;
         this.heightMap = new int[256];
         this.specialBlockLocations = specialBlockLocations;
+        this.specialMetadata = specialMetadata;
         this.cacheTimestamp = cacheTimestamp;
         if (specialBlockLocations.isEmpty()) {
             this.special = null;
@@ -158,14 +124,14 @@ public final class CachedChunk {
     }
 
     private final void setSpecial() {
-        for (Map.Entry<String, List<BlockPos>> entry : specialBlockLocations.entrySet()) {
-            for (BlockPos pos : entry.getValue()) {
+        for (Map.Entry<String, List<BetterBlockPos>> entry : specialBlockLocations.entrySet()) {
+            for (BetterBlockPos pos : entry.getValue()) {
                 special.put(getPositionIndex(pos.getX(), pos.getY(), pos.getZ()), entry.getKey());
             }
         }
     }
 
-    public final BlockState getBlock(int x, int y, int z, DimensionType dimension, ResourceKey<Level> dimensionId) {
+    public final BlockState getBlock(int x, int y, int z, int dimensionId) {
         int index = getPositionIndex(x, y, z);
         PathingBlockType type = getType(index);
         int internalPos = z << 4 | x;
@@ -182,24 +148,24 @@ public final class CachedChunk {
         if (special != null) {
             String str = special.get(index);
             if (str != null) {
-                return BlockUtils.stringToBlockRequired(str).defaultBlockState();
+                return new BlockState(BlockUtils.stringToBlockRequired(str), specialMetadata.getOrDefault(index, 0));
             }
         }
 
         if (type == PathingBlockType.SOLID) {
-            if (y == dimension.logicalHeight() - 1 && dimension.hasCeiling()) {
+            if (y == 127 && dimensionId == -1) {
                 // nether roof is always unbreakable
-                return Blocks.BEDROCK.defaultBlockState();
+                return new BlockState(Blocks.bedrock, 0);
             }
 
-            if ((dimensionId == Level.OVERWORLD || dimensionId == Level.NETHER) && y < dimension.minY() + 5) {
+            if ((dimensionId == 0 || dimensionId == -1) && y < 5) {
                 // solid blocks below 5 are commonly bedrock
                 // however, returning bedrock always would be a little yikes
                 // discourage paths that include breaking blocks below 5 a little more heavily just so that it takes paths breaking what's known to be stone (at 5 or above) instead of what could maybe be bedrock (below 5)
-                return Blocks.OBSIDIAN.defaultBlockState();
+                return new BlockState(Blocks.obsidian, 0);
             }
         }
-        return ChunkPacker.pathingTypeToBlock(type, dimension, dimensionId);
+        return ChunkPacker.pathingTypeToBlock(type, dimensionId);
     }
 
     private PathingBlockType getType(int index) {
@@ -226,17 +192,21 @@ public final class CachedChunk {
         return overview;
     }
 
-    public final Map<String, List<BlockPos>> getRelativeBlocks() {
+    public final Map<String, List<BetterBlockPos>> getRelativeBlocks() {
         return specialBlockLocations;
     }
 
-    public final ArrayList<BlockPos> getAbsoluteBlocks(String blockType) {
+    public int getSpecialMetadata(BetterBlockPos pos) {
+        return specialMetadata.getOrDefault(getPositionIndex(pos.x, pos.y, pos.z), 0);
+    }
+
+    public final ArrayList<BetterBlockPos> getAbsoluteBlocks(String blockType) {
         if (specialBlockLocations.get(blockType) == null) {
             return null;
         }
-        ArrayList<BlockPos> res = new ArrayList<>();
-        for (BlockPos pos : specialBlockLocations.get(blockType)) {
-            res.add(new BlockPos(pos.getX() + x * 16, pos.getY(), pos.getZ() + z * 16));
+        ArrayList<BetterBlockPos> res = new ArrayList<>();
+        for (BetterBlockPos pos : specialBlockLocations.get(blockType)) {
+            res.add(new BetterBlockPos(pos.getX() + x * 16, pos.getY(), pos.getZ() + z * 16));
         }
         return res;
     }
