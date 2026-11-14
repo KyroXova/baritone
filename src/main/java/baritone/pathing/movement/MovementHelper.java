@@ -617,7 +617,7 @@ public interface MovementHelper extends ActionCosts, Helper {
             if (avoidBreaking(context.bsi, x, y, z, state)) {
                 return COST_INF;
             }
-            double strVsBlock = context.toolSet.getStrVsBlock(state);
+            double strVsBlock = context.toolSet.getStrVsBlock(state, x, y, z);
             if (strVsBlock <= 0) {
                 return COST_INF;
             }
@@ -659,7 +659,7 @@ public interface MovementHelper extends ActionCosts, Helper {
      */
     static void switchToBestToolFor(IPlayerContext ctx, BlockState b, ToolSet ts, boolean preferSilkTouch) {
         if (Baritone.settings().autoTool.value && !Baritone.settings().assumeExternalAutoTool.value) {
-            ctx.player().getInventory().setSelectedSlot(ts.getBestSlot(b.getBlock(), preferSilkTouch));
+            ctx.player().inventory.currentItem = ts.getBestSlot(b, preferSilkTouch);
         }
     }
 
