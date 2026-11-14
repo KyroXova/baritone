@@ -26,23 +26,24 @@ import baritone.api.pathing.goals.GoalYLevel;
 import baritone.api.process.IExploreProcess;
 import baritone.api.process.PathingCommand;
 import baritone.api.process.PathingCommandType;
+import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.MyChunkPos;
 import baritone.cache.CachedWorld;
 import baritone.utils.BaritoneProcessHelper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.minecraft.world.ChunkCoordIntPair;
+
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.ChunkPos;
 
 public final class ExploreProcess extends BaritoneProcessHelper implements IExploreProcess {
 
-    private BlockPos explorationOrigin;
+    private BetterBlockPos explorationOrigin;
 
     private IChunkFilter filter;
 
@@ -59,7 +60,7 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
 
     @Override
     public void explore(int centerX, int centerZ) {
-        explorationOrigin = new BlockPos(centerX, 0, centerZ);
+        explorationOrigin = new BetterBlockPos(centerX, 0, centerZ);
         distanceCompleted = 0;
     }
 
@@ -105,11 +106,11 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
         return new PathingCommand(new GoalComposite(closestUncached), PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
     }
 
-    private Goal[] closestUncachedChunks(BlockPos center, IChunkFilter filter) {
-        int chunkX = center.getX() >> 4;
-        int chunkZ = center.getZ() >> 4;
+    private Goal[] closestUncachedChunks(BetterBlockPos center, IChunkFilter filter) {
+        int chunkX = center.x >> 4;
+        int chunkZ = center.z >> 4;
         int count = Math.min(filter.countRemain(), Baritone.settings().exploreChunkSetMinimumSize.value);
-        List<BlockPos> centers = new ArrayList<>();
+        List<BetterBlockPos> centers = new ArrayList<>();
         int renderDistance = Baritone.settings().worldExploringChunkOffset.value;
         for (int dist = distanceCompleted; ; dist++) {
             for (int dx = -dist; dx <= dist; dx++) {
@@ -144,14 +145,14 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
                     } else {
                         centerZ += offset;
                     }
-                    centers.add(new BlockPos(centerX, 0, centerZ));
+                    centers.add(new BetterBlockPos(centerX, 0, centerZ));
                 }
             }
             if (dist % 10 == 0) {
                 count = Math.min(filter.countRemain(), Baritone.settings().exploreChunkSetMinimumSize.value);
             }
             if (centers.size() >= count) {
-                return centers.stream().map(pos -> createGoal(pos.getX(), pos.getZ())).toArray(Goal[]::new);
+                return centers.stream().map(pos -> createGoal(pos.x, pos.z)).toArray(Goal[]::new);
             }
             if (centers.isEmpty()) {
                 // we have explored everything from 0 to dist inclusive
@@ -165,8 +166,6 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
         if (Baritone.settings().exploreMaintainY.value == -1) {
             return new GoalXZ(x, z);
         }
-        // don't use a goalblock because we still want isInGoal to return true if X and Z are correct
-        // we just want to try and maintain Y on the way there, not necessarily end at that specific Y
         return new GoalXZ(x, z) {
             @Override
             public double heuristic(int x, int y, int z) {
@@ -214,30 +213,26 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
 
     private class JsonChunkFilter implements IChunkFilter {
 
-        private final boolean invert; // if true, the list is interpreted as a list of chunks that are NOT explored, if false, the list is interpreted as a list of chunks that ARE explored
+        private final boolean invert;
         private final LongOpenHashSet inFilter;
         private final MyChunkPos[] positions;
 
-        private JsonChunkFilter(Path path, boolean invert) throws Exception { // ioexception, json exception, etc
+        private JsonChunkFilter(Path path, boolean invert) throws Exception {
             this.invert = invert;
             Gson gson = new GsonBuilder().create();
             positions = gson.fromJson(new InputStreamReader(Files.newInputStream(path)), MyChunkPos[].class);
             logDirect("Loaded " + positions.length + " positions");
             inFilter = new LongOpenHashSet();
             for (MyChunkPos mcp : positions) {
-                inFilter.add(ChunkPos.pack(mcp.x, mcp.z));
+                inFilter.add(ChunkCoordIntPair.chunkXZ2Int(mcp.x, mcp.z));
             }
         }
 
         @Override
         public Status isAlreadyExplored(int chunkX, int chunkZ) {
-            if (inFilter.contains(ChunkPos.pack(chunkX, chunkZ)) ^ invert) {
-                // either it's on the list of explored chunks, or it's not on the list of unexplored chunks
-                // either way, we have it
+            if (inFilter.contains(ChunkCoordIntPair.chunkXZ2Int(chunkX, chunkZ)) ^ invert) {
                 return Status.EXPLORED;
             } else {
-                // either it's not on the list of explored chunks, or it's on the list of unexplored chunks
-                // either way, it depends on if baritone has cached it so defer to that
                 return Status.UNKNOWN;
             }
         }
@@ -245,16 +240,12 @@ public final class ExploreProcess extends BaritoneProcessHelper implements IExpl
         @Override
         public int countRemain() {
             if (!invert) {
-                // if invert is false, anything not on the list is uncached
                 return Integer.MAX_VALUE;
             }
-            // but if invert is true, anything not on the list IS assumed cached
-            // so we are done if everything on our list is cached!
             int countRemain = 0;
             BaritoneChunkCache bcc = new BaritoneChunkCache();
             for (MyChunkPos pos : positions) {
                 if (bcc.isAlreadyExplored(pos.x, pos.z) != Status.EXPLORED) {
-                    // either waiting for it or dont have it at all
                     countRemain++;
                     if (countRemain >= Baritone.settings().exploreChunkSetMinimumSize.value) {
                         return countRemain;

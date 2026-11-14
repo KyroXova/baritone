@@ -1,13 +1,16 @@
+/*
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
+ */
+
 package baritone.selection;
 
 import baritone.Baritone;
 import baritone.api.event.events.RenderEvent;
 import baritone.api.event.listener.AbstractGameEventListener;
 import baritone.api.selection.ISelection;
+import baritone.api.utils.BetterBlockPos;
 import baritone.utils.IRenderer;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.util.AxisAlignedBB;
 
 public class SelectionRenderer implements IRenderer, AbstractGameEventListener {
 
@@ -20,7 +23,7 @@ public class SelectionRenderer implements IRenderer, AbstractGameEventListener {
         baritone.getGameEventHandler().registerEventListener(this);
     }
 
-    public static void renderSelections(PoseStack stack, ISelection[] selections) {
+    public static void renderSelections(ISelection[] selections) {
         float opacity = settings.selectionOpacity.value;
         boolean ignoreDepth = settings.renderSelectionIgnoreDepth.value;
         float lineWidth = settings.selectionLineWidth.value;
@@ -29,31 +32,26 @@ public class SelectionRenderer implements IRenderer, AbstractGameEventListener {
             return;
         }
 
-        BufferBuilder bufferBuilder = IRenderer.startLines(settings.colorSelection.value, opacity);
-
         for (ISelection selection : selections) {
-            IRenderer.emitAABB(bufferBuilder, stack, selection.aabb(), SELECTION_BOX_EXPANSION, lineWidth);
+            AxisAlignedBB box = selection.aabb().expand(SELECTION_BOX_EXPANSION, SELECTION_BOX_EXPANSION, SELECTION_BOX_EXPANSION);
+            IRenderer.drawAABB(box, settings.colorSelection.value, opacity, lineWidth, ignoreDepth);
         }
 
         if (settings.renderSelectionCorners.value) {
-            IRenderer.glColor(settings.colorSelectionPos1.value, opacity);
-
             for (ISelection selection : selections) {
-                IRenderer.emitAABB(bufferBuilder, stack, new AABB(selection.pos1()), lineWidth);
-            }
+                BetterBlockPos pos1 = selection.pos1();
+                AxisAlignedBB b1 = AxisAlignedBB.getBoundingBox(pos1.x, pos1.y, pos1.z, pos1.x + 1, pos1.y + 1, pos1.z + 1);
+                IRenderer.drawAABB(b1, settings.colorSelectionPos1.value, opacity, lineWidth, ignoreDepth);
 
-            IRenderer.glColor(settings.colorSelectionPos2.value, opacity);
-
-            for (ISelection selection : selections) {
-                IRenderer.emitAABB(bufferBuilder, stack, new AABB(selection.pos2()), lineWidth);
+                BetterBlockPos pos2 = selection.pos2();
+                AxisAlignedBB b2 = AxisAlignedBB.getBoundingBox(pos2.x, pos2.y, pos2.z, pos2.x + 1, pos2.y + 1, pos2.z + 1);
+                IRenderer.drawAABB(b2, settings.colorSelectionPos2.value, opacity, lineWidth, ignoreDepth);
             }
         }
-
-        IRenderer.endLines(bufferBuilder, ignoreDepth);
     }
 
     @Override
     public void onRenderPass(RenderEvent event) {
-        renderSelections(event.getModelViewStack(), manager.getSelections());
+        renderSelections(manager.getSelections());
     }
 }

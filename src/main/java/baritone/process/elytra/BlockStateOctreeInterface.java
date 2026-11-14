@@ -19,7 +19,6 @@ package baritone.process.elytra;
 
 import dev.babbaj.pathfinder.NetherPathfinder;
 import dev.babbaj.pathfinder.Octree;
-import net.minecraft.world.level.dimension.DimensionType;
 
 /**
  * @author Brady

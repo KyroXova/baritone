@@ -18,7 +18,7 @@
 package baritone.process.elytra;
 
 import baritone.api.utils.BetterBlockPos;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.Vec3;
 
 import java.util.AbstractList;
 import java.util.Collections;
@@ -56,10 +56,10 @@ public final class NetherPath extends AbstractList<BetterBlockPos> {
 
     public Vec3 getVec(int index) {
         final BetterBlockPos pos = this.get(index);
-        return new Vec3(pos.x, pos.y, pos.z);
+        return Vec3.createVectorHelper(pos.x, pos.y, pos.z);
     }
 
-    public static NetherPath emptyPath() {
+    public static NetherPath empty() {
         return EMPTY_PATH;
     }
 }

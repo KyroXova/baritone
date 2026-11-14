@@ -17,10 +17,10 @@
 
 package baritone.process.elytra;
 
-import net.minecraft.core.BlockPos;
+import baritone.api.utils.BetterBlockPos;
 
 import java.util.concurrent.CompletableFuture;
 
 public interface IElytraPathFinder {
-    CompletableFuture<UnpackedSegment> pathFindAsync(final BlockPos src, final BlockPos dst);
+    CompletableFuture<UnpackedSegment> pathFindAsync(final BetterBlockPos src, final BetterBlockPos dst);
 }

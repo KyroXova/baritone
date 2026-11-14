@@ -28,25 +28,24 @@ import baritone.api.process.PathingCommand;
 import baritone.api.process.PathingCommandType;
 import baritone.api.selection.ISelection;
 import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.IPlayerContext;
 import baritone.api.utils.RayTraceUtils;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.RotationUtils;
 import baritone.api.utils.input.Input;
 import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BaritoneProcessHelper;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.*;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.block.Block;
+import net.minecraft.block.IGrowable;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,40 +55,26 @@ import java.util.function.Predicate;
 
 public final class FarmProcess extends BaritoneProcessHelper implements IFarmProcess {
 
-    private boolean active;
+    private static final ForgeDirection[] HORIZONTALS = {
+            ForgeDirection.NORTH,
+            ForgeDirection.SOUTH,
+            ForgeDirection.WEST,
+            ForgeDirection.EAST
+    };
 
-    private List<BlockPos> locations;
+    private boolean active;
+    private List<BetterBlockPos> locations;
     private int tickCount;
 
     private int range;
-    private BlockPos center;
+    private BetterBlockPos center;
 
     private static final List<Item> FARMLAND_PLANTABLE = Arrays.asList(
-            Items.BEETROOT_SEEDS,
-            Items.MELON_SEEDS,
-            Items.WHEAT_SEEDS,
-            Items.PUMPKIN_SEEDS,
-            Items.POTATO,
-            Items.CARROT
-    );
-
-    private static final List<Item> PICKUP_DROPPED = Arrays.asList(
-            Items.BEETROOT_SEEDS,
-            Items.BEETROOT,
-            Items.MELON_SEEDS,
-            Items.MELON_SLICE,
-            Blocks.MELON.asItem(),
-            Items.WHEAT_SEEDS,
-            Items.WHEAT,
-            Items.PUMPKIN_SEEDS,
-            Blocks.PUMPKIN.asItem(),
-            Items.POTATO,
-            Items.CARROT,
-            Items.NETHER_WART,
-            Items.COCOA_BEANS,
-            Blocks.SUGAR_CANE.asItem(),
-            Blocks.BAMBOO.asItem(),
-            Blocks.CACTUS.asItem()
+            Items.melon_seeds,
+            Items.wheat_seeds,
+            Items.pumpkin_seeds,
+            Items.potato,
+            Items.carrot
     );
 
     public FarmProcess(Baritone baritone) {
@@ -102,7 +87,7 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
     }
 
     @Override
-    public void farm(int range, BlockPos pos) {
+    public void farm(int range, BetterBlockPos pos) {
         if (pos == null) {
             center = baritone.getPlayerContext().playerFeet();
         } else {
@@ -114,82 +99,91 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
     }
 
     private enum Harvest {
-        WHEAT((CropBlock) Blocks.WHEAT),
-        CARROTS((CropBlock) Blocks.CARROTS),
-        POTATOES((CropBlock) Blocks.POTATOES),
-        BEETROOT((CropBlock) Blocks.BEETROOTS),
-        PUMPKIN(Blocks.PUMPKIN, state -> true),
-        MELON(Blocks.MELON, state -> true),
-        NETHERWART(Blocks.NETHER_WART, state -> state.getValue(NetherWartBlock.AGE) >= 3),
-        COCOA(Blocks.COCOA, state -> state.getValue(CocoaBlock.AGE) >= 2),
-        SUGARCANE(Blocks.SUGAR_CANE, null) {
+        WHEAT(Blocks.wheat, meta -> meta >= 7),
+        CARROTS(Blocks.carrots, meta -> meta >= 7),
+        POTATOES(Blocks.potatoes, meta -> meta >= 7),
+        PUMPKIN(Blocks.pumpkin, meta -> true),
+        MELON(Blocks.melon_block, meta -> true),
+        NETHERWART(Blocks.nether_wart, meta -> meta >= 3),
+        COCOA(Blocks.cocoa, meta -> ((meta & 12) >> 2) >= 2),
+        SUGARCANE(Blocks.reeds, null) {
             @Override
-            public boolean readyToHarvest(Level world, BlockPos pos, BlockState state) {
+            public boolean readyToHarvest(IPlayerContext ctx, BetterBlockPos pos, int meta) {
                 if (Baritone.settings().replantCrops.value) {
-                    return world.getBlockState(pos.below()).getBlock() instanceof SugarCaneBlock;
+                    return ctx.world().getBlock(pos.x, pos.y - 1, pos.z) == Blocks.reeds;
                 }
                 return true;
             }
         },
-        BAMBOO(Blocks.BAMBOO, null) {
+        CACTUS(Blocks.cactus, null) {
             @Override
-            public boolean readyToHarvest(Level world, BlockPos pos, BlockState state) {
+            public boolean readyToHarvest(IPlayerContext ctx, BetterBlockPos pos, int meta) {
                 if (Baritone.settings().replantCrops.value) {
-                    return world.getBlockState(pos.below()).getBlock() instanceof BambooStalkBlock;
-                }
-                return true;
-            }
-        },
-        CACTUS(Blocks.CACTUS, null) {
-            @Override
-            public boolean readyToHarvest(Level world, BlockPos pos, BlockState state) {
-                if (Baritone.settings().replantCrops.value) {
-                    return world.getBlockState(pos.below()).getBlock() instanceof CactusBlock;
+                    return ctx.world().getBlock(pos.x, pos.y - 1, pos.z) == Blocks.cactus;
                 }
                 return true;
             }
         };
+
         public final Block block;
-        public final Predicate<BlockState> readyToHarvest;
+        public final Predicate<Integer> readyToHarvestMeta;
 
-        Harvest(CropBlock blockCrops) {
-            this(blockCrops, blockCrops::isMaxAge);
-            // max age is 7 for wheat, carrots, and potatoes, but 3 for beetroot
-        }
-
-        Harvest(Block block, Predicate<BlockState> readyToHarvest) {
+        Harvest(Block block, Predicate<Integer> readyToHarvestMeta) {
             this.block = block;
-            this.readyToHarvest = readyToHarvest;
+            this.readyToHarvestMeta = readyToHarvestMeta;
         }
 
-        public boolean readyToHarvest(Level world, BlockPos pos, BlockState state) {
-            return readyToHarvest.test(state);
+        public boolean readyToHarvest(IPlayerContext ctx, BetterBlockPos pos, int meta) {
+            return readyToHarvestMeta != null && readyToHarvestMeta.test(meta);
         }
     }
 
-    private boolean readyForHarvest(Level world, BlockPos pos, BlockState state) {
+    private boolean readyForHarvest(IPlayerContext ctx, BetterBlockPos pos) {
+        Block block = ctx.world().getBlock(pos.x, pos.y, pos.z);
+        int meta = ctx.world().getBlockMetadata(pos.x, pos.y, pos.z);
         for (Harvest harvest : Harvest.values()) {
-            if (harvest.block == state.getBlock()) {
-                return harvest.readyToHarvest(world, pos, state);
+            if (harvest.block == block) {
+                return harvest.readyToHarvest(ctx, pos, meta);
             }
         }
         return false;
     }
 
     private boolean isPlantable(ItemStack stack) {
-        return FARMLAND_PLANTABLE.contains(stack.getItem());
+        return stack != null && FARMLAND_PLANTABLE.contains(stack.getItem());
     }
 
     private boolean isBoneMeal(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem().equals(Items.BONE_MEAL);
+        return stack != null && stack.getItem() == Items.dye && stack.getItemDamage() == 15;
     }
 
     private boolean isNetherWart(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem().equals(Items.NETHER_WART);
+        return stack != null && stack.getItem() == Items.nether_wart;
     }
 
     private boolean isCocoa(ItemStack stack) {
-        return !stack.isEmpty() && stack.getItem().equals(Items.COCOA_BEANS);
+        return stack != null && stack.getItem() == Items.dye && stack.getItemDamage() == 3;
+    }
+
+    private static boolean isPickupDropped(Item item, int damage) {
+        if (item == Items.wheat_seeds || item == Items.wheat || item == Items.melon_seeds ||
+                item == Items.melon || item == Item.getItemFromBlock(Blocks.melon_block) ||
+                item == Items.pumpkin_seeds || item == Item.getItemFromBlock(Blocks.pumpkin) ||
+                item == Items.potato || item == Items.carrot || item == Items.nether_wart ||
+                item == Items.reeds || item == Item.getItemFromBlock(Blocks.cactus)) {
+            return true;
+        }
+        return item == Items.dye && damage == 3;
+    }
+
+    private boolean isBonemealable(IPlayerContext ctx, BetterBlockPos pos) {
+        Block block = ctx.world().getBlock(pos.x, pos.y, pos.z);
+        if (block instanceof IGrowable) {
+            IGrowable ig = (IGrowable) block;
+            return ig.func_149851_a(ctx.world(), pos.x, pos.y, pos.z, ctx.world().isRemote)
+                    && ig.func_149852_a(ctx.world(), ctx.world().rand, pos.x, pos.y, pos.z);
+        }
+        return false;
     }
 
     @Override
@@ -200,10 +194,10 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
                 scan.add(harvest.block);
             }
             if (Baritone.settings().replantCrops.value) {
-                scan.add(Blocks.FARMLAND);
-                scan.add(Blocks.JUNGLE_LOG);
+                scan.add(Blocks.farmland);
+                scan.add(Blocks.log);
                 if (Baritone.settings().replantNetherWart.value) {
-                    scan.add(Blocks.SOUL_SAND);
+                    scan.add(Blocks.soul_sand);
                 }
             }
 
@@ -215,83 +209,84 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
         if (Baritone.settings().farmUsingSelection.value) {
             ISelection selection = baritone.getSelectionManager().getLastSelection();
             if (selection != null) {
-                locations.removeIf(pos -> !selection.aabb().contains(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
+                BetterBlockPos min = selection.min();
+                BetterBlockPos max = selection.max();
+                locations.removeIf(pos -> pos.x < min.x || pos.x > max.x || pos.y < min.y || pos.y > max.y || pos.z < min.z || pos.z > max.z);
             }
         }
-        List<BlockPos> toBreak = new ArrayList<>();
-        List<BlockPos> openFarmland = new ArrayList<>();
-        List<BlockPos> bonemealable = new ArrayList<>();
-        List<BlockPos> openSoulsand = new ArrayList<>();
-        List<BlockPos> openLog = new ArrayList<>();
-        for (BlockPos pos : locations) {
-            //check if the target block is out of range.
-            if (range != 0 && pos.distSqr(center) > range * range) {
+        List<BetterBlockPos> toBreak = new ArrayList<>();
+        List<BetterBlockPos> openFarmland = new ArrayList<>();
+        List<BetterBlockPos> bonemealable = new ArrayList<>();
+        List<BetterBlockPos> openSoulsand = new ArrayList<>();
+        List<BetterBlockPos> openLog = new ArrayList<>();
+        for (BetterBlockPos pos : locations) {
+            // check if the target block is out of range.
+            if (range != 0 && pos.distanceSq(center) > (double) range * range) {
                 continue;
             }
 
-            BlockState state = ctx.world().getBlockState(pos);
-            boolean airAbove = ctx.world().getBlockState(pos.above()).getBlock() instanceof AirBlock;
-            if (state.getBlock() == Blocks.FARMLAND) {
+            Block block = ctx.world().getBlock(pos.x, pos.y, pos.z);
+            int meta = ctx.world().getBlockMetadata(pos.x, pos.y, pos.z);
+            boolean airAbove = ctx.world().isAirBlock(pos.x, pos.y + 1, pos.z);
+            if (block == Blocks.farmland) {
                 if (airAbove) {
                     openFarmland.add(pos);
                 }
                 continue;
             }
-            if (state.getBlock() == Blocks.SOUL_SAND) {
+            if (block == Blocks.soul_sand) {
                 if (airAbove) {
                     openSoulsand.add(pos);
                 }
                 continue;
             }
-            if (state.getBlock() == Blocks.JUNGLE_LOG) {
-                for (Direction direction : Direction.Plane.HORIZONTAL) {
-                    if (ctx.world().getBlockState(pos.relative(direction)).getBlock() instanceof AirBlock) {
+            if (block == Blocks.log && (meta & 3) == 3) { // jungle log
+                for (ForgeDirection dir : HORIZONTALS) {
+                    BetterBlockPos adj = pos.relative(dir);
+                    if (ctx.world().isAirBlock(adj.x, adj.y, adj.z)) {
                         openLog.add(pos);
                         break;
                     }
                 }
                 continue;
             }
-            if (readyForHarvest(ctx.world(), pos, state)) {
+            if (readyForHarvest(ctx, pos)) {
                 toBreak.add(pos);
                 continue;
             }
-            if (state.getBlock() instanceof BonemealableBlock) {
-                BonemealableBlock ig = (BonemealableBlock) state.getBlock();
-                if (ig.isValidBonemealTarget(ctx.world(), pos, state, BonemealSource.INTERACTION) && ig.isBonemealSuccess(ctx.world(), ctx.world().getRandom(), pos, state, BonemealSource.INTERACTION)) {
-                    bonemealable.add(pos);
-                }
+            if (isBonemealable(ctx, pos)) {
+                bonemealable.add(pos);
             }
         }
 
         baritone.getInputOverrideHandler().clearAllKeys();
         BetterBlockPos playerPos = ctx.playerFeet();
         double blockReachDistance = ctx.playerController().getBlockReachDistance();
-        for (BlockPos pos : toBreak) {
-            if (playerPos.distSqr(pos) > blockReachDistance * blockReachDistance) {
+        for (BetterBlockPos pos : toBreak) {
+            if (playerPos.distanceSq(pos) > blockReachDistance * blockReachDistance) {
                 continue;
             }
             Optional<Rotation> rot = RotationUtils.reachable(ctx, pos);
             if (rot.isPresent() && isSafeToCancel) {
                 baritone.getLookBehavior().updateTarget(rot.get(), true);
-                MovementHelper.switchToBestToolFor(ctx, ctx.world().getBlockState(pos));
+                MovementHelper.switchToBestToolFor(ctx, baritone.bsi.get0(pos));
                 if (ctx.isLookingAt(pos)) {
                     baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_LEFT, true);
                 }
                 return new PathingCommand(null, PathingCommandType.REQUEST_PAUSE);
             }
         }
-        ArrayList<BlockPos> both = new ArrayList<>(openFarmland);
+        ArrayList<BetterBlockPos> both = new ArrayList<>(openFarmland);
         both.addAll(openSoulsand);
-        for (BlockPos pos : both) {
-            if (playerPos.distSqr(pos) > blockReachDistance * blockReachDistance) {
+        for (BetterBlockPos pos : both) {
+            if (playerPos.distanceSq(pos) > blockReachDistance * blockReachDistance) {
                 continue;
             }
             boolean soulsand = openSoulsand.contains(pos);
-            Optional<Rotation> rot = RotationUtils.reachableOffset(ctx, pos, new Vec3(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5), blockReachDistance, false);
+            Optional<Rotation> rot = RotationUtils.reachableOffset(ctx, pos, Vec3.createVectorHelper(pos.x + 0.5, pos.y + 1.0, pos.z + 0.5), blockReachDistance, false);
             if (rot.isPresent() && isSafeToCancel && baritone.getInventoryBehavior().throwaway(true, soulsand ? this::isNetherWart : this::isPlantable)) {
-                HitResult result = RayTraceUtils.rayTraceTowards(ctx.player(), rot.get(), blockReachDistance);
-                if (result instanceof BlockHitResult && ((BlockHitResult) result).getDirection() == Direction.UP) {
+                MovingObjectPosition result = RayTraceUtils.rayTraceTowards(ctx.player(), rot.get(), blockReachDistance);
+                if (result != null && result.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK && result.sideHit == 1) { // 1 is UP
                     baritone.getLookBehavior().updateTarget(rot.get(), true);
                     if (ctx.isLookingAt(pos)) {
                         baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
@@ -300,19 +295,20 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
                 }
             }
         }
-        for (BlockPos pos : openLog) {
-            if (playerPos.distSqr(pos) > blockReachDistance * blockReachDistance) {
+        for (BetterBlockPos pos : openLog) {
+            if (playerPos.distanceSq(pos) > blockReachDistance * blockReachDistance) {
                 continue;
             }
-            for (Direction dir : Direction.Plane.HORIZONTAL) {
-                if (!(ctx.world().getBlockState(pos.relative(dir)).getBlock() instanceof AirBlock)) {
+            for (ForgeDirection dir : HORIZONTALS) {
+                BetterBlockPos adj = pos.relative(dir);
+                if (!ctx.world().isAirBlock(adj.x, adj.y, adj.z)) {
                     continue;
                 }
-                Vec3 faceCenter = Vec3.atCenterOf(pos).add(Vec3.atLowerCornerOf(dir.getUnitVec3i()).scale(0.5));
+                Vec3 faceCenter = Vec3.createVectorHelper(pos.x + 0.5 + dir.offsetX * 0.5, pos.y + 0.5, pos.z + 0.5 + dir.offsetZ * 0.5);
                 Optional<Rotation> rot = RotationUtils.reachableOffset(ctx, pos, faceCenter, blockReachDistance, false);
                 if (rot.isPresent() && isSafeToCancel && baritone.getInventoryBehavior().throwaway(true, this::isCocoa)) {
-                    HitResult result = RayTraceUtils.rayTraceTowards(ctx.player(), rot.get(), blockReachDistance);
-                    if (result instanceof BlockHitResult && ((BlockHitResult) result).getDirection() == dir) {
+                    MovingObjectPosition result = RayTraceUtils.rayTraceTowards(ctx.player(), rot.get(), blockReachDistance);
+                    if (result != null && result.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK && result.sideHit == dir.ordinal()) {
                         baritone.getLookBehavior().updateTarget(rot.get(), true);
                         if (ctx.isLookingAt(pos)) {
                             baritone.getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
@@ -322,8 +318,8 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
                 }
             }
         }
-        for (BlockPos pos : bonemealable) {
-            if (playerPos.distSqr(pos) > blockReachDistance * blockReachDistance) {
+        for (BetterBlockPos pos : bonemealable) {
+            if (playerPos.distanceSq(pos) > blockReachDistance * blockReachDistance) {
                 continue;
             }
             Optional<Rotation> rot = RotationUtils.reachable(ctx, pos);
@@ -346,39 +342,41 @@ public final class FarmProcess extends BaritoneProcessHelper implements IFarmPro
         }
 
         List<Goal> goalz = new ArrayList<>();
-        for (BlockPos pos : toBreak) {
+        for (BetterBlockPos pos : toBreak) {
             goalz.add(new BuilderProcess.GoalBreak(pos));
         }
         if (baritone.getInventoryBehavior().throwaway(false, this::isPlantable)) {
-            for (BlockPos pos : openFarmland) {
+            for (BetterBlockPos pos : openFarmland) {
                 goalz.add(new GoalBlock(pos.above()));
             }
         }
         if (baritone.getInventoryBehavior().throwaway(false, this::isNetherWart)) {
-            for (BlockPos pos : openSoulsand) {
+            for (BetterBlockPos pos : openSoulsand) {
                 goalz.add(new GoalBlock(pos.above()));
             }
         }
         if (baritone.getInventoryBehavior().throwaway(false, this::isCocoa)) {
-            for (BlockPos pos : openLog) {
-                for (Direction direction : Direction.Plane.HORIZONTAL) {
-                    if (ctx.world().getBlockState(pos.relative(direction)).getBlock() instanceof AirBlock) {
-                        goalz.add(new GoalGetToBlock(pos.relative(direction)));
+            for (BetterBlockPos pos : openLog) {
+                for (ForgeDirection dir : HORIZONTALS) {
+                    BetterBlockPos adj = pos.relative(dir);
+                    if (ctx.world().isAirBlock(adj.x, adj.y, adj.z)) {
+                        goalz.add(new GoalGetToBlock(adj));
                     }
                 }
             }
         }
         if (baritone.getInventoryBehavior().throwaway(false, this::isBoneMeal)) {
-            for (BlockPos pos : bonemealable) {
+            for (BetterBlockPos pos : bonemealable) {
                 goalz.add(new GoalBlock(pos));
             }
         }
         for (Entity entity : ctx.entities()) {
-            if (entity instanceof ItemEntity && entity.onGround()) {
-                ItemEntity ei = (ItemEntity) entity;
-                if (PICKUP_DROPPED.contains(ei.getItem().getItem())) {
-                    // +0.1 because of farmland's 0.9375 dummy height lol
-                    goalz.add(new GoalBlock(new BetterBlockPos(entity.position().x, entity.position().y + 0.1, entity.position().z)));
+            if (entity instanceof EntityItem && entity.onGround) {
+                EntityItem ei = (EntityItem) entity;
+                ItemStack stack = ei.getEntityItem();
+                if (stack != null && isPickupDropped(stack.getItem(), stack.getItemDamage())) {
+                    // +0.1 because of farmland's 0.9375 dummy height
+                    goalz.add(new GoalBlock(new BetterBlockPos(entity.posX, entity.posY + 0.1, entity.posZ)));
                 }
             }
         }
