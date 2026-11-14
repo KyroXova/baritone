@@ -47,20 +47,23 @@ public class PrecomputedData {
 
         Ternary canWalkOnState = MovementHelper.canWalkOnBlockState(state);
         switch (canWalkOnState) {
-            case YES -> blockData |= CAN_WALK_ON_MASK;
-            case MAYBE -> blockData |= CAN_WALK_ON_MAYBE_MASK;
+            case YES: blockData |= CAN_WALK_ON_MASK; break;
+            case MAYBE: blockData |= CAN_WALK_ON_MAYBE_MASK; break;
+            default: break;
         }
 
         Ternary canWalkThroughState = MovementHelper.canWalkThroughBlockState(state);
         switch (canWalkThroughState) {
-            case YES -> blockData |= CAN_WALK_THROUGH_MASK;
-            case MAYBE -> blockData |= CAN_WALK_THROUGH_MAYBE_MASK;
+            case YES: blockData |= CAN_WALK_THROUGH_MASK; break;
+            case MAYBE: blockData |= CAN_WALK_THROUGH_MAYBE_MASK; break;
+            default: break;
         }
 
         Ternary fullyPassableState = MovementHelper.fullyPassableBlockState(state);
         switch (fullyPassableState) {
-            case YES -> blockData |= FULLY_PASSABLE_MASK;
-            case MAYBE -> blockData |= FULLY_PASSABLE_MAYBE_MASK;
+            case YES: blockData |= FULLY_PASSABLE_MASK; break;
+            case MAYBE: blockData |= FULLY_PASSABLE_MAYBE_MASK; break;
+            default: break;
         }
 
         blockData |= COMPLETED_MASK;

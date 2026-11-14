@@ -18,9 +18,9 @@
 package baritone.api.event.events;
 
 import baritone.api.utils.Pair;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
+import net.minecraft.world.ChunkCoordIntPair;
 
 import java.util.List;
 
@@ -29,19 +29,19 @@ import java.util.List;
  */
 public final class BlockChangeEvent {
 
-    private final ChunkPos chunk;
-    private final List<Pair<BlockPos, BlockState>> blocks;
+    private final ChunkCoordIntPair chunk;
+    private final List<Pair<BetterBlockPos, BlockState>> blocks;
 
-    public BlockChangeEvent(ChunkPos pos, List<Pair<BlockPos, BlockState>> blocks) {
+    public BlockChangeEvent(ChunkCoordIntPair pos, List<Pair<BetterBlockPos, BlockState>> blocks) {
         this.chunk = pos;
         this.blocks = blocks;
     }
 
-    public ChunkPos getChunkPos() {
+    public ChunkCoordIntPair getChunkPos() {
         return this.chunk;
     }
 
-    public List<Pair<BlockPos, BlockState>> getBlocks() {
+    public List<Pair<BetterBlockPos, BlockState>> getBlocks() {
         return this.blocks;
     }
 }

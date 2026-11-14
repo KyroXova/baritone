@@ -18,9 +18,7 @@
 package baritone.api.event.events;
 
 import baritone.api.utils.Rotation;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.entity.EntityLivingBase;
 
 /**
  * @author Brady
@@ -100,14 +98,13 @@ public final class RotationMoveEvent {
         /**
          * Called when the player's motion is updated.
          *
-         * @see Entity#moveRelative(float, Vec3)
          */
         MOTION_UPDATE,
 
         /**
          * Called when the player jumps.
          *
-         * @see LivingEntity
+         * @see EntityLivingBase
          */
         JUMP
     }

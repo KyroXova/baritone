@@ -20,7 +20,6 @@ package baritone.api.pathing.goals;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.SettingsUtil;
 import baritone.api.utils.interfaces.IGoalRenderPos;
-import net.minecraft.core.BlockPos;
 
 
 /**
@@ -34,15 +33,15 @@ public class GoalGetToBlock implements Goal, IGoalRenderPos {
     public final int y;
     public final int z;
 
-    public GoalGetToBlock(BlockPos pos) {
+    public GoalGetToBlock(BetterBlockPos pos) {
         this.x = pos.getX();
         this.y = pos.getY();
         this.z = pos.getZ();
     }
 
     @Override
-    public BlockPos getGoalPos() {
-        return new BlockPos(x, y, z);
+    public BetterBlockPos getGoalPos() {
+        return new BetterBlockPos(x, y, z);
     }
 
     @Override

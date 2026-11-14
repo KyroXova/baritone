@@ -89,7 +89,7 @@ public class OpenSetsTest {
             // can't use an existing goal
             // because they use Baritone.settings()
             // and we can't do that because Minecraft itself isn't initted
-            PathNode pn = new PathNode(0, 0, 0, new Goal() {
+            PathNode pn = new PathNode(i, 0, 0, new Goal() {
                 @Override
                 public boolean isInGoal(int x, int y, int z) {
                     return false;

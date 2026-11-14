@@ -40,7 +40,8 @@ public abstract class MixinScreen implements IGuiScreen {
         if (clickEvent == null) {
             return;
         }
-        if (!(clickEvent instanceof ClickEvent.RunCommand(String command))) return;
+        if (!(clickEvent instanceof ClickEvent.RunCommand)) return;
+        String command = ((ClickEvent.RunCommand) clickEvent).command();
         if (!command.startsWith(FORCE_COMMAND_PREFIX)) {
             return;
         }

@@ -18,21 +18,15 @@
 package baritone.api.utils;
 
 import javax.annotation.Nonnull;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
-import net.minecraft.util.Mth;
+import net.minecraft.util.MathHelper;
+import net.minecraftforge.common.util.ForgeDirection;
 
 /**
- * A better BlockPos that has fewer hash collisions (and slightly more performant offsets)
- * <p>
- * Is it really faster to subclass BlockPos and calculate a hash in the constructor like this, taking everything into account?
- * Yes. 20% faster actually. It's called BETTER BlockPos for a reason. Source:
- * <a href="https://docs.google.com/spreadsheets/d/1GWjOjOZINkg_0MkRgKRPH1kUzxjsnEROD9u3UFh_DJc">Benchmark Spreadsheet</a>
+ * Immutable integer block coordinates for the 1.7.10 world interface.
  *
  * @author leijurv
  */
-public final class BetterBlockPos extends BlockPos {
+public final class BetterBlockPos {
 
     private static final int NUM_X_BITS = 26;
     private static final int NUM_Z_BITS = NUM_X_BITS;
@@ -49,28 +43,35 @@ public final class BetterBlockPos extends BlockPos {
     public final int y;
     public final int z;
 
+    public int getX() { return x; }
+    public int getY() { return y; }
+    public int getZ() { return z; }
+
     public BetterBlockPos(int x, int y, int z) {
-        super(x, y, z);
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
     public BetterBlockPos(double x, double y, double z) {
-        this(Mth.floor(x), Mth.floor(y), Mth.floor(z));
+        this(MathHelper.floor_double(x), MathHelper.floor_double(y), MathHelper.floor_double(z));
     }
 
-    public BetterBlockPos(BlockPos pos) {
-        this(pos.getX(), pos.getY(), pos.getZ());
+    public BetterBlockPos offset(int dx, int dy, int dz) {
+        return dx == 0 && dy == 0 && dz == 0 ? this : new BetterBlockPos(x + dx, y + dy, z + dz);
+    }
+
+    public BetterBlockPos(BetterBlockPos pos) {
+        this(pos.x, pos.y, pos.z);
     }
 
     /**
      * Like constructor but returns null if pos is null, good if you just need to possibly censor coordinates
      *
-     * @param pos The BlockPos, possibly null, to convert
+     * @param pos The position, possibly null, to copy
      * @return A BetterBlockPos or null if pos was null
      */
-    public static BetterBlockPos from(BlockPos pos) {
+    public static BetterBlockPos from(BetterBlockPos pos) {
         if (pos == null) {
             return null;
         }
@@ -110,20 +111,13 @@ public final class BetterBlockPos extends BlockPos {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null) {
+        if (!(o instanceof BetterBlockPos)) {
             return false;
         }
-        if (o instanceof BetterBlockPos) {
-            BetterBlockPos oth = (BetterBlockPos) o;
-            return oth.x == x && oth.y == y && oth.z == z;
-        }
-        // during path execution, like "if (whereShouldIBe.equals(whereAmI)) {"
-        // sometimes we compare a BlockPos to a BetterBlockPos
-        BlockPos oth = (BlockPos) o;
-        return oth.getX() == x && oth.getY() == y && oth.getZ() == z;
+        BetterBlockPos oth = (BetterBlockPos) o;
+        return oth.x == x && oth.y == y && oth.z == z;
     }
 
-    @Override
     public BetterBlockPos above() {
         // this is unimaginably faster than blockpos.up
         // that literally calls
@@ -137,75 +131,60 @@ public final class BetterBlockPos extends BlockPos {
         return new BetterBlockPos(x, y + 1, z);
     }
 
-    @Override
     public BetterBlockPos above(int amt) {
         // see comment in up()
         return amt == 0 ? this : new BetterBlockPos(x, y + amt, z);
     }
 
-    @Override
     public BetterBlockPos below() {
         // see comment in up()
         return new BetterBlockPos(x, y - 1, z);
     }
 
-    @Override
     public BetterBlockPos below(int amt) {
         // see comment in up()
         return amt == 0 ? this : new BetterBlockPos(x, y - amt, z);
     }
 
-    @Override
-    public BetterBlockPos relative(Direction dir) {
-        Vec3i vec = dir.getUnitVec3i();
-        return new BetterBlockPos(x + vec.getX(), y + vec.getY(), z + vec.getZ());
+    public BetterBlockPos relative(ForgeDirection dir) {
+        return relative(dir, 1);
     }
 
-    @Override
-    public BetterBlockPos relative(Direction dir, int dist) {
+    public BetterBlockPos relative(ForgeDirection dir, int dist) {
         if (dist == 0) {
             return this;
         }
-        Vec3i vec = dir.getUnitVec3i();
-        return new BetterBlockPos(x + vec.getX() * dist, y + vec.getY() * dist, z + vec.getZ() * dist);
+        return new BetterBlockPos(x + dir.offsetX * dist, y + dir.offsetY * dist, z + dir.offsetZ * dist);
     }
 
-    @Override
     public BetterBlockPos north() {
         return new BetterBlockPos(x, y, z - 1);
     }
 
-    @Override
     public BetterBlockPos north(int amt) {
         return amt == 0 ? this : new BetterBlockPos(x, y, z - amt);
     }
 
-    @Override
     public BetterBlockPos south() {
         return new BetterBlockPos(x, y, z + 1);
     }
 
-    @Override
     public BetterBlockPos south(int amt) {
         return amt == 0 ? this : new BetterBlockPos(x, y, z + amt);
     }
 
-    @Override
     public BetterBlockPos east() {
         return new BetterBlockPos(x + 1, y, z);
     }
 
-    @Override
     public BetterBlockPos east(int amt) {
         return amt == 0 ? this : new BetterBlockPos(x + amt, y, z);
     }
 
-    @Override
     public BetterBlockPos west() {
         return new BetterBlockPos(x - 1, y, z);
     }
 
-    @Override
     public BetterBlockPos west(int amt) {
         return amt == 0 ? this : new BetterBlockPos(x - amt, y, z);
     }

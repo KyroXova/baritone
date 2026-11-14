@@ -18,12 +18,51 @@
 package baritone.pathing.movement;
 
 import baritone.api.utils.input.Input;
-import net.minecraft.util.Mth;
-
+import java.util.Objects;
 import java.util.stream.Stream;
 
-public record MovementOption(Input input1, Input input2, float motionX, float motionZ) {
+public final class MovementOption {
     private static final float SPRINT_MULTIPLIER = 1.3f;
+    private final Input input1;
+    private final Input input2;
+    private final float motionX;
+    private final float motionZ;
+
+    public MovementOption(Input input1, Input input2, float motionX, float motionZ) {
+        this.input1 = input1;
+        this.input2 = input2;
+        this.motionX = motionX;
+        this.motionZ = motionZ;
+    }
+
+    public Input input1() { return input1; }
+    public Input input2() { return input2; }
+    public float motionX() { return motionX; }
+    public float motionZ() { return motionZ; }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof MovementOption)) return false;
+        MovementOption that = (MovementOption) other;
+        return input1 == that.input1 && input2 == that.input2
+                && Float.compare(motionX, that.motionX) == 0
+                && Float.compare(motionZ, that.motionZ) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(input1);
+        result = 31 * result + Objects.hashCode(input2);
+        result = 31 * result + Float.hashCode(motionX);
+        return 31 * result + Float.hashCode(motionZ);
+    }
+
+    @Override
+    public String toString() {
+        return "MovementOption[input1=" + input1 + ", input2=" + input2
+                + ", motionX=" + motionX + ", motionZ=" + motionZ + "]";
+    }
 
     public MovementOption(Input input1, float motionX, float motionZ) {
         this(input1, null, motionX, motionZ);
@@ -39,7 +78,7 @@ public record MovementOption(Input input1, Input input2, float motionX, float mo
     }
 
     public float distanceToSq(float otherX, float otherZ) {
-        return Mth.abs(motionX() - otherX) + Mth.abs(motionZ() - otherZ);
+        return Math.abs(motionX() - otherX) + Math.abs(motionZ() - otherZ);
     }
     
     public static Stream<MovementOption> getOptions(float motionX, float motionZ, boolean canSprint) {

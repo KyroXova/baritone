@@ -20,11 +20,10 @@ package baritone.api.pathing.goals;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.SettingsUtil;
 import baritone.api.utils.interfaces.IGoalRenderPos;
-import net.minecraft.core.BlockPos;
 
 /**
  * Useful if the goal is just to mine a block. This goal will be satisfied if the specified
- * {@link BlockPos} is at to or above the specified position for this goal.
+ * position is at or above the specified position for this goal.
  *
  * @author leijurv
  */
@@ -45,7 +44,7 @@ public class GoalTwoBlocks implements Goal, IGoalRenderPos {
      */
     protected final int z;
 
-    public GoalTwoBlocks(BlockPos pos) {
+    public GoalTwoBlocks(BetterBlockPos pos) {
         this(pos.getX(), pos.getY(), pos.getZ());
     }
 
@@ -69,8 +68,8 @@ public class GoalTwoBlocks implements Goal, IGoalRenderPos {
     }
 
     @Override
-    public BlockPos getGoalPos() {
-        return new BlockPos(x, y, z);
+    public BetterBlockPos getGoalPos() {
+        return new BetterBlockPos(x, y, z);
     }
 
     @Override

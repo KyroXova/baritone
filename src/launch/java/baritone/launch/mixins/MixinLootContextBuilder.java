@@ -37,8 +37,8 @@ public abstract class MixinLootContextBuilder {
         if (instance != null) {
             return instance.reloadableRegistries();
         }
-        if (getLevel() instanceof BlockOptionalMeta.ServerLevelStub sls) {
-            return sls.holder();
+        if (getLevel() instanceof BlockOptionalMeta.ServerLevelStub) {
+            return ((BlockOptionalMeta.ServerLevelStub) getLevel()).holder();
         }
         return null;
     }
