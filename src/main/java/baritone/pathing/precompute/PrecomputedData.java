@@ -17,7 +17,7 @@
 
 package baritone.pathing.precompute;
 
-import baritone.pathing.movement.MovementHelper;
+import baritone.pathing.movement.LegacyMovementRules;
 import baritone.utils.BlockStateInterface;
 import baritone.api.utils.BlockState;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,21 +46,21 @@ public class PrecomputedData {
     private byte fillData(BlockState state) {
         byte blockData = 0;
 
-        Ternary canWalkOnState = MovementHelper.canWalkOnBlockState(state);
+        Ternary canWalkOnState = LegacyMovementRules.canWalkOnBlockState(state);
         switch (canWalkOnState) {
             case YES: blockData |= CAN_WALK_ON_MASK; break;
             case MAYBE: blockData |= CAN_WALK_ON_MAYBE_MASK; break;
             default: break;
         }
 
-        Ternary canWalkThroughState = MovementHelper.canWalkThroughBlockState(state);
+        Ternary canWalkThroughState = LegacyMovementRules.canWalkThroughBlockState(state);
         switch (canWalkThroughState) {
             case YES: blockData |= CAN_WALK_THROUGH_MASK; break;
             case MAYBE: blockData |= CAN_WALK_THROUGH_MAYBE_MASK; break;
             default: break;
         }
 
-        Ternary fullyPassableState = MovementHelper.fullyPassableBlockState(state);
+        Ternary fullyPassableState = LegacyMovementRules.fullyPassableBlockState(state);
         switch (fullyPassableState) {
             case YES: blockData |= FULLY_PASSABLE_MASK; break;
             case MAYBE: blockData |= FULLY_PASSABLE_MAYBE_MASK; break;
@@ -76,7 +76,7 @@ public class PrecomputedData {
         int blockData = data.computeIfAbsent(state, this::fillData);
 
         if ((blockData & CAN_WALK_ON_MAYBE_MASK) != 0) {
-            return MovementHelper.canWalkOnPosition(bsi, x, y, z, state);
+            return LegacyMovementRules.canWalkOnPosition(bsi, x, y, z, state);
         } else {
             return (blockData & CAN_WALK_ON_MASK) != 0;
         }
@@ -86,7 +86,7 @@ public class PrecomputedData {
         int blockData = data.computeIfAbsent(state, this::fillData);
 
         if ((blockData & CAN_WALK_THROUGH_MAYBE_MASK) != 0) {
-            return MovementHelper.canWalkThroughPosition(bsi, x, y, z, state);
+            return LegacyMovementRules.canWalkThroughPosition(bsi, x, y, z, state);
         } else {
             return (blockData & CAN_WALK_THROUGH_MASK) != 0;
         }
@@ -96,7 +96,7 @@ public class PrecomputedData {
         int blockData = data.computeIfAbsent(state, this::fillData);
 
         if ((blockData & FULLY_PASSABLE_MAYBE_MASK) != 0) {
-            return MovementHelper.fullyPassablePosition(bsi, x, y, z, state);
+            return LegacyMovementRules.fullyPassablePosition(bsi, x, y, z, state);
         } else {
             return (blockData & FULLY_PASSABLE_MASK) != 0;
         }
