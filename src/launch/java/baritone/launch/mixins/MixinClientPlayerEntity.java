@@ -25,6 +25,7 @@ import baritone.api.event.events.SprintStateEvent;
 import baritone.api.event.events.type.EventState;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -36,15 +37,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(EntityClientPlayerMP.class)
 public class MixinClientPlayerEntity {
 
+    @Unique
+    private boolean baritone$ridingUpdate;
+
     @Inject(
             method = "onUpdate",
             at = @At("HEAD")
     )
     private void onPreUpdate(CallbackInfo ci) {
+        this.baritone$ridingUpdate = false;
         IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((EntityClientPlayerMP) (Object) this);
         if (baritone != null) {
-            baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.PRE));
-
             SprintStateEvent sprintEvent = new SprintStateEvent();
             baritone.getGameEventHandler().onPlayerSprintState(sprintEvent);
             if (sprintEvent.getState() != null) {
@@ -53,11 +56,42 @@ public class MixinClientPlayerEntity {
         }
     }
 
+    @Inject(method = "onUpdate", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/entity/EntityClientPlayerMP;isRiding()Z"))
+    private void onPreRidingPackets(CallbackInfo ci) {
+        EntityClientPlayerMP player = (EntityClientPlayerMP) (Object) this;
+        if (!player.isRiding()) {
+            return;
+        }
+        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer(player);
+        if (baritone != null) {
+            this.baritone$ridingUpdate = true;
+            baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.PRE));
+        }
+    }
+
     @Inject(
             method = "onUpdate",
             at = @At("RETURN")
     )
     private void onPostUpdate(CallbackInfo ci) {
+        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((EntityClientPlayerMP) (Object) this);
+        if (baritone != null && this.baritone$ridingUpdate) {
+            baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.POST));
+        }
+        this.baritone$ridingUpdate = false;
+    }
+
+    @Inject(method = "sendMotionUpdates", at = @At("HEAD"))
+    private void onPreMotionUpdate(CallbackInfo ci) {
+        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((EntityClientPlayerMP) (Object) this);
+        if (baritone != null) {
+            baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.PRE));
+        }
+    }
+
+    @Inject(method = "sendMotionUpdates", at = @At("RETURN"))
+    private void onPostMotionUpdate(CallbackInfo ci) {
         IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((EntityClientPlayerMP) (Object) this);
         if (baritone != null) {
             baritone.getGameEventHandler().onPlayerUpdate(new PlayerUpdateEvent(EventState.POST));
