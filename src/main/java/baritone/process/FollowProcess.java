@@ -28,10 +28,10 @@ import baritone.api.process.PathingCommand;
 import baritone.api.process.PathingCommandType;
 import baritone.api.utils.BetterBlockPos;
 import baritone.utils.BaritoneProcessHelper;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.EntityItem;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Vec3;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -60,12 +60,13 @@ public final class FollowProcess extends BaritoneProcessHelper implements IFollo
     }
 
     private Goal towards(Entity following) {
-        BlockPos pos;
+        BetterBlockPos pos;
         if (Baritone.settings().followOffsetDistance.value == 0 || into) {
-            pos = following.blockPosition();
+            pos = new BetterBlockPos(following.posX, following.boundingBox.minY, following.posZ);
         } else {
-            GoalXZ g = GoalXZ.fromDirection(following.position(), Baritone.settings().followOffsetDirection.value, Baritone.settings().followOffsetDistance.value);
-            pos = new BetterBlockPos(g.getX(), following.position().y, g.getZ());
+            GoalXZ g = GoalXZ.fromDirection(Vec3.createVectorHelper(following.posX, following.boundingBox.minY, following.posZ),
+                    Baritone.settings().followOffsetDirection.value, Baritone.settings().followOffsetDistance.value);
+            pos = new BetterBlockPos(g.getX(), following.boundingBox.minY, g.getZ());
         }
         if (into) {
             return new GoalBlock(pos);
@@ -78,14 +79,14 @@ public final class FollowProcess extends BaritoneProcessHelper implements IFollo
         if (entity == null) {
             return false;
         }
-        if (!entity.isAlive()) {
+        if (!entity.isEntityAlive()) {
             return false;
         }
         if (entity.equals(ctx.player())) {
             return false;
         }
         int maxDist = Baritone.settings().followTargetMaxDistance.value;
-        if (maxDist != 0 && entity.distanceToSqr(ctx.player()) > maxDist * maxDist) {
+        if (maxDist != 0 && entity.getDistanceSqToEntity(ctx.player()) > (double) maxDist * maxDist) {
             return false;
         }
         return ctx.entitiesStream().anyMatch(entity::equals);
@@ -127,7 +128,7 @@ public final class FollowProcess extends BaritoneProcessHelper implements IFollo
 
     @Override
     public void pickup(Predicate<ItemStack> filter) {
-        this.filter = e -> e instanceof ItemEntity && filter.test(((ItemEntity) e).getItem());
+        this.filter = e -> e instanceof EntityItem && filter.test(((EntityItem) e).getEntityItem());
         this.into = true;
     }
 
