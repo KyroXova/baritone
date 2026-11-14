@@ -21,4 +21,17 @@ public final class BlockState {
     public Block getBlock() { return block; }
 
     public int getMetadata() { return metadata; }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof BlockState)) return false;
+        BlockState state = (BlockState) other;
+        return block == state.block && metadata == state.metadata;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * System.identityHashCode(block) + metadata;
+    }
 }
