@@ -22,4 +22,14 @@ public class RayTraceUtilsTest {
         Vec3 down = RayTraceUtils.lookDirection(new Rotation(0, 90));
         assertEquals(-1, down.yCoord, 0.0002);
     }
+
+    @Test
+    public void coordinateRotationPointsTowardTarget() {
+        Rotation rotation = RotationUtils.calcRotationFromCoords(
+                new BetterBlockPos(0, 0, 0), new BetterBlockPos(0, 0, 4));
+        Vec3 direction = RotationUtils.calcLookDirectionFromRotation(rotation);
+        assertEquals(0, direction.xCoord, 0.0002);
+        assertEquals(0, direction.yCoord, 0.0002);
+        assertEquals(1, direction.zCoord, 0.0002);
+    }
 }
