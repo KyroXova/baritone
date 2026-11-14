@@ -67,4 +67,14 @@ public class BlockOptionalMetaTest {
         assertTrue(lookup.has(new BlockState(testBlockB, 7)));
         assertFalse(lookup.has(new BlockState(testBlockB, 0)));
     }
+
+    @Test
+    public void testStackHashes() {
+        Block testBlock = new TestBlock();
+        BlockOptionalMeta bomAny = new BlockOptionalMeta(testBlock);
+        assertNotNull(bomAny.stackHashes());
+
+        BlockOptionalMeta bomMeta = new BlockOptionalMeta(testBlock, 3);
+        assertNotNull(bomMeta.stackHashes());
+    }
 }

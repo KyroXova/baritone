@@ -4,6 +4,7 @@
 
 package baritone.api.utils;
 
+import baritone.api.utils.accessor.IItemStack;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
@@ -63,6 +64,12 @@ public class BlockOptionalMetaLookup {
 
     public boolean has(ItemStack stack) {
         if (stack == null) return false;
+        if ((Object) stack instanceof IItemStack) {
+            int hash = ((IItemStack) (Object) stack).getBaritoneHash();
+            if (stackHashes.contains(hash)) {
+                return true;
+            }
+        }
         for (BlockOptionalMeta bom : boms) {
             if (bom.matches(stack)) return true;
         }

@@ -4,6 +4,7 @@
 
 package baritone.api.utils;
 
+import baritone.api.utils.accessor.IItemStack;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
@@ -50,7 +51,16 @@ public final class BlockOptionalMeta {
 
         Item item = Item.getItemFromBlock(block);
         if (item != null) {
-            this.stackHashes = ImmutableSet.of(item.hashCode());
+            if (meta != null) {
+                this.stackHashes = ImmutableSet.of(item.hashCode() + meta);
+            } else {
+                ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
+                builder.add(item.hashCode());
+                for (int i = 0; i < 16; i++) {
+                    builder.add(item.hashCode() + i);
+                }
+                this.stackHashes = builder.build();
+            }
         } else {
             this.stackHashes = ImmutableSet.of();
         }
@@ -84,7 +94,16 @@ public final class BlockOptionalMeta {
 
         Item item = Item.getItemFromBlock(block);
         if (item != null) {
-            this.stackHashes = ImmutableSet.of(item.hashCode());
+            if (meta != null) {
+                this.stackHashes = ImmutableSet.of(item.hashCode() + meta);
+            } else {
+                ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
+                builder.add(item.hashCode());
+                for (int i = 0; i < 16; i++) {
+                    builder.add(item.hashCode() + i);
+                }
+                this.stackHashes = builder.build();
+            }
         } else {
             this.stackHashes = ImmutableSet.of();
         }
@@ -109,6 +128,12 @@ public final class BlockOptionalMeta {
     public boolean matches(ItemStack stack) {
         if (stack == null || stack.getItem() == null) {
             return false;
+        }
+        if ((Object) stack instanceof IItemStack) {
+            int hash = ((IItemStack) (Object) stack).getBaritoneHash();
+            if (stackHashes.contains(hash)) {
+                return true;
+            }
         }
         Item blockItem = Item.getItemFromBlock(block);
         if (blockItem == null || stack.getItem() != blockItem) {
