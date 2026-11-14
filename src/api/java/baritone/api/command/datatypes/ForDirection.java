@@ -1,41 +1,29 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.api.command.datatypes;
 
 import baritone.api.command.exception.CommandException;
 import baritone.api.command.helpers.TabCompleteHelper;
+import net.minecraftforge.common.util.ForgeDirection;
+
 import java.util.Locale;
 import java.util.stream.Stream;
-import net.minecraft.core.Direction;
 
-public enum ForDirection implements IDatatypeFor<Direction> {
+public enum ForDirection implements IDatatypeFor<ForgeDirection> {
     INSTANCE;
 
     @Override
-    public Direction get(IDatatypeContext ctx) throws CommandException {
-        return Direction.valueOf(ctx.getConsumer().getString().toUpperCase(Locale.US));
+    public ForgeDirection get(IDatatypeContext ctx) throws CommandException {
+        return ForgeDirection.valueOf(ctx.getConsumer().getString().toUpperCase(Locale.US));
     }
 
     @Override
     public Stream<String> tabComplete(IDatatypeContext ctx) throws CommandException {
         return new TabCompleteHelper()
-                .append(Stream.of(Direction.values())
-                        .map(Direction::getName).map(String::toLowerCase))
+                .append(Stream.of(ForgeDirection.VALID_DIRECTIONS)
+                        .map(d -> d.name().toLowerCase(Locale.US)))
                 .filterPrefix(ctx.getConsumer().getString())
                 .stream();
     }

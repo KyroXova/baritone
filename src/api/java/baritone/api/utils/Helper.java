@@ -72,7 +72,10 @@ public interface Helper {
      * @param message The message to display in the popup
      */
     default void logToast(IChatComponent title, IChatComponent message) {
-        Minecraft.getMinecraft().func_152344_a(() -> BaritoneAPI.getSettings().toaster.value.accept(title, message));
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc != null) {
+            mc.func_152344_a(() -> BaritoneAPI.getSettings().toaster.value.accept(title, message));
+        }
     }
 
     /**
@@ -133,7 +136,10 @@ public interface Helper {
      * @param error   Whether to log as an error
      */
     default void logNotificationDirect(String message, boolean error) {
-        Minecraft.getMinecraft().func_152344_a(() -> BaritoneAPI.getSettings().notifier.value.accept(message, error));
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc != null) {
+            mc.func_152344_a(() -> BaritoneAPI.getSettings().notifier.value.accept(message, error));
+        }
     }
 
     /**
@@ -168,7 +174,12 @@ public interface Helper {
         if (logAsToast) {
             logToast(getPrefix(), component);
         } else {
-            Minecraft.getMinecraft().func_152344_a(() -> BaritoneAPI.getSettings().logger.value.accept(component));
+            Minecraft mc = Minecraft.getMinecraft();
+            if (mc != null) {
+                mc.func_152344_a(() -> BaritoneAPI.getSettings().logger.value.accept(component));
+            } else if (BaritoneAPI.getSettings().logger.value != null) {
+                BaritoneAPI.getSettings().logger.value.accept(component);
+            }
         }
     }
 

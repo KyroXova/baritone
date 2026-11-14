@@ -23,7 +23,6 @@ import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.manager.ICommandManager;
 import baritone.api.event.events.TabCompleteEvent;
 import baritone.api.utils.SettingsUtil;
-import net.minecraft.resources.Identifier;
 
 import java.util.Comparator;
 import java.util.List;
@@ -102,8 +101,7 @@ public class TabCompleteHelper {
     public TabCompleteHelper append(Class<? extends Enum<?>> num) {
         return append(
                 Stream.of(num.getEnumConstants())
-                        .map(Enum::name)
-                        .map(String::toLowerCase)
+                        .map(e -> e.name().toLowerCase(Locale.US))
         );
     }
 
@@ -143,8 +141,7 @@ public class TabCompleteHelper {
     public TabCompleteHelper prepend(Class<? extends Enum<?>> num) {
         return prepend(
                 Stream.of(num.getEnumConstants())
-                        .map(Enum::name)
-                        .map(String::toLowerCase)
+                        .map(e -> e.name().toLowerCase(Locale.US))
         );
     }
 
@@ -207,18 +204,24 @@ public class TabCompleteHelper {
     /**
      * Filter out any element that doesn't start with {@code prefix} and return this object for chaining
      * <p>
-     * Assumes every element in this {@link TabCompleteHelper} is a {@link Identifier}
+     * Supports matching namespaced string identifiers (e.g. "stone" matches "minecraft:stone" or "stone")
      *
      * @param prefix The prefix to filter for
      * @return This {@link TabCompleteHelper}
      */
     public TabCompleteHelper filterPrefixNamespaced(String prefix) {
-        Identifier loc = Identifier.tryParse(prefix);
-        if (loc == null) {
-            stream = Stream.empty();
-            return this;
-        }
-        return filterPrefix(loc.toString());
+        String query = prefix.toLowerCase(Locale.US);
+        return filter(x -> {
+            String lower = x.toLowerCase(Locale.US);
+            if (lower.startsWith(query)) {
+                return true;
+            }
+            if (!query.contains(":") && lower.contains(":")) {
+                String afterColon = lower.substring(lower.indexOf(':') + 1);
+                return afterColon.startsWith(query);
+            }
+            return false;
+        });
     }
 
     /**

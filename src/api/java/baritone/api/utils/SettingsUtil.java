@@ -94,7 +94,9 @@ public class SettingsUtil {
     }
 
     private static Path settingsByName(String name) {
-        return Minecraft.getMinecraft().mcDataDir.toPath().resolve("baritone").resolve(name);
+        Minecraft mc = Minecraft.getMinecraft();
+        Path base = (mc != null && mc.mcDataDir != null) ? mc.mcDataDir.toPath() : java.nio.file.Paths.get(".");
+        return base.resolve("baritone").resolve(name);
     }
 
     public static List<Settings.Setting> modifiedSettings(Settings settings) {

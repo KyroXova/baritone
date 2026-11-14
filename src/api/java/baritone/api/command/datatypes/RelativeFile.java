@@ -99,7 +99,7 @@ public enum RelativeFile implements IDatatypePost<File, File> {
     }
 
     public static File gameDir(Minecraft mc) {
-        File gameDir = mc.gameDirectory.getAbsoluteFile();
+        File gameDir = mc.mcDataDir.getAbsoluteFile();
         if (gameDir.getName().equals(".")) {
             return gameDir.getParentFile();
         }

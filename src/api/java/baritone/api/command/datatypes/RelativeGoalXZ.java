@@ -22,7 +22,7 @@ import baritone.api.command.exception.CommandException;
 import baritone.api.pathing.goals.GoalXZ;
 import baritone.api.utils.BetterBlockPos;
 import java.util.stream.Stream;
-import net.minecraft.util.Mth;
+import net.minecraft.util.MathHelper;
 
 public enum RelativeGoalXZ implements IDatatypePost<GoalXZ, BetterBlockPos> {
     INSTANCE;
@@ -35,8 +35,8 @@ public enum RelativeGoalXZ implements IDatatypePost<GoalXZ, BetterBlockPos> {
 
         final IArgConsumer consumer = ctx.getConsumer();
         return new GoalXZ(
-                Mth.floor(consumer.getDatatypePost(RelativeCoordinate.INSTANCE, (double) origin.x)),
-                Mth.floor(consumer.getDatatypePost(RelativeCoordinate.INSTANCE, (double) origin.z))
+                MathHelper.floor_double(consumer.getDatatypePost(RelativeCoordinate.INSTANCE, (double) origin.x)),
+                MathHelper.floor_double(consumer.getDatatypePost(RelativeCoordinate.INSTANCE, (double) origin.z))
         );
     }
 

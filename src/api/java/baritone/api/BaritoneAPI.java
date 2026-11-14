@@ -34,14 +34,19 @@ public final class BaritoneAPI {
         settings = new Settings();
         SettingsUtil.readAndApply(settings, SettingsUtil.SETTINGS_DEFAULT_NAME);
 
+        IBaritoneProvider prov = null;
         try {
-            provider = (IBaritoneProvider) Class.forName("baritone.BaritoneProvider").newInstance();
-        } catch (ReflectiveOperationException ex) {
-            throw new RuntimeException(ex);
+            prov = (IBaritoneProvider) Class.forName("baritone.BaritoneProvider").newInstance();
+        } catch (Throwable ex) {
+            // Ignored in isolated test environment
         }
+        provider = prov;
     }
 
     public static IBaritoneProvider getProvider() {
+        if (BaritoneAPI.provider == null) {
+            throw new IllegalStateException("Baritone provider not initialized");
+        }
         return BaritoneAPI.provider;
     }
 

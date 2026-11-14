@@ -22,7 +22,7 @@ import baritone.api.command.exception.CommandException;
 import baritone.api.pathing.goals.GoalYLevel;
 import baritone.api.utils.BetterBlockPos;
 import java.util.stream.Stream;
-import net.minecraft.util.Mth;
+import net.minecraft.util.MathHelper;
 
 public enum RelativeGoalYLevel implements IDatatypePost<GoalYLevel, BetterBlockPos> {
     INSTANCE;
@@ -34,7 +34,7 @@ public enum RelativeGoalYLevel implements IDatatypePost<GoalYLevel, BetterBlockP
         }
 
         return new GoalYLevel(
-                Mth.floor(ctx.getConsumer().getDatatypePost(RelativeCoordinate.INSTANCE, (double) origin.y))
+                MathHelper.floor_double(ctx.getConsumer().getDatatypePost(RelativeCoordinate.INSTANCE, (double) origin.y))
         );
     }
 
