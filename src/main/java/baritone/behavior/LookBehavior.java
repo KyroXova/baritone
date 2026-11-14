@@ -26,7 +26,7 @@ import baritone.api.event.events.*;
 import baritone.api.utils.IPlayerContext;
 import baritone.api.utils.Rotation;
 import baritone.behavior.look.ForkableRandom;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.play.client.C03PacketPlayer;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -94,10 +94,10 @@ public final class LookBehavior extends Behavior implements ILookBehavior {
                     return;
                 }
 
-                this.prevRotation = new Rotation(ctx.player().getYRot(), ctx.player().getXRot());
+                this.prevRotation = new Rotation(ctx.player().rotationYaw, ctx.player().rotationPitch);
                 final Rotation actual = this.processor.peekRotation(this.target.rotation);
-                ctx.player().setYRot(actual.getYaw());
-                ctx.player().setXRot(actual.getPitch());
+                ctx.player().rotationYaw = actual.getYaw();
+                ctx.player().rotationPitch = actual.getPitch();
                 break;
             }
             case POST: {
@@ -112,13 +112,10 @@ public final class LookBehavior extends Behavior implements ILookBehavior {
                         this.smoothPitchBuffer.removeFirst();
                     }
                     if (this.target.mode == Target.Mode.SERVER) {
-                        ctx.player().setYRot(this.prevRotation.getYaw());
-                        ctx.player().setXRot(this.prevRotation.getPitch());
-                    } else if (ctx.player().isFallFlying() ? Baritone.settings().elytraSmoothLook.value : Baritone.settings().smoothLook.value) {
-                        ctx.player().setYRot((float) this.smoothYawBuffer.stream().mapToDouble(d -> d).average().orElse(this.prevRotation.getYaw()));
-                        if (ctx.player().isFallFlying()) {
-                            ctx.player().setXRot((float) this.smoothPitchBuffer.stream().mapToDouble(d -> d).average().orElse(this.prevRotation.getPitch()));
-                        }
+                        ctx.player().rotationYaw = this.prevRotation.getYaw();
+                        ctx.player().rotationPitch = this.prevRotation.getPitch();
+                    } else if (Baritone.settings().smoothLook.value) {
+                        ctx.player().rotationYaw = (float) this.smoothYawBuffer.stream().mapToDouble(d -> d).average().orElse(this.prevRotation.getYaw());
                     }
                     //ctx.player().xRotO = prevRotation.getPitch();
                     //ctx.player().yRotO = prevRotation.getYaw();
@@ -135,13 +132,13 @@ public final class LookBehavior extends Behavior implements ILookBehavior {
 
     @Override
     public void onSendPacket(PacketEvent event) {
-        if (!(event.getPacket() instanceof ServerboundMovePlayerPacket)) {
+        if (!(event.getPacket() instanceof C03PacketPlayer)) {
             return;
         }
 
-        final ServerboundMovePlayerPacket packet = (ServerboundMovePlayerPacket) event.getPacket();
-        if (packet instanceof ServerboundMovePlayerPacket.Rot || packet instanceof ServerboundMovePlayerPacket.PosRot) {
-            this.serverRotation = new Rotation(packet.getYRot(0.0f), packet.getXRot(0.0f));
+        final C03PacketPlayer packet = (C03PacketPlayer) event.getPacket();
+        if (packet.func_149463_k()) {
+            this.serverRotation = new Rotation(packet.func_149462_g(), packet.func_149470_h());
         }
     }
 
@@ -154,7 +151,7 @@ public final class LookBehavior extends Behavior implements ILookBehavior {
     public void pig() {
         if (this.target != null) {
             final Rotation actual = this.processor.peekRotation(this.target.rotation);
-            ctx.player().setYRot(actual.getYaw());
+            ctx.player().rotationYaw = actual.getYaw();
         }
     }
 
@@ -302,7 +299,7 @@ public final class LookBehavior extends Behavior implements ILookBehavior {
 
         private float mouseToAngle(double mouseDelta) {
             // casting float literals to double gets us the precise values used by mc
-            final double f = ctx.minecraft().options.sensitivity().get() * (double) 0.6f + (double) 0.2f;
+            final double f = ctx.minecraft().gameSettings.mouseSensitivity * (double) 0.6f + (double) 0.2f;
             return (float) (mouseDelta * f * f * f * 8.0d) * 0.15f; // yes, one double and one float scaling factor
         }
     }
@@ -338,10 +335,7 @@ public final class LookBehavior extends Behavior implements ILookBehavior {
                 final boolean antiCheat = settings.antiCheatCompatibility.value;
                 final boolean blockFreeLook = settings.blockFreeLook.value;
 
-                if (ctx.player().isFallFlying()) {
-                    // always need to set angles while flying
-                    return settings.elytraFreeLook.value ? SERVER : CLIENT;
-                } else if (settings.freeLook.value) {
+                if (settings.freeLook.value) {
                     // Regardless of if antiCheatCompatibility is enabled, if a blockInteract is requested then the player
                     // rotation needs to be set somehow, otherwise Baritone will halt since objectMouseOver() will just be
                     // whatever the player is mousing over visually. Let's just settle for setting it silently.
