@@ -18,12 +18,10 @@
 package baritone.api.utils;
 
 import baritone.api.BaritoneAPI;
-import baritone.api.Settings;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.chat.GuiMessageTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.IChatComponent;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -44,30 +42,25 @@ public interface Helper {
     Helper HELPER = new Helper() {};
 
     /**
-     * The main game instance returned by {@link Minecraft#getInstance()}.
+     * The main game instance returned by {@link Minecraft#getMinecraft()}.
      * Deprecated since {@link IPlayerContext#minecraft()} should be used instead (In the majority of cases).
      */
     @Deprecated
-    Minecraft mc = Minecraft.getInstance();
+    Minecraft mc = Minecraft.getMinecraft();
 
-    /**
-     * The tag to assign to chat messages when {@link Settings#useMessageTag} is {@code true}.
-     */
-    GuiMessageTag MESSAGE_TAG = new GuiMessageTag(0xFF55FF, null, Component.literal("Baritone message."), "Baritone");
-
-    static Component getPrefix() {
+    static IChatComponent getPrefix() {
         // Inner text component
         final Calendar now = Calendar.getInstance();
         final boolean xd = now.get(Calendar.MONTH) == Calendar.APRIL && now.get(Calendar.DAY_OF_MONTH) <= 3;
-        MutableComponent baritone = Component.literal(xd ? "Baritoe" : BaritoneAPI.getSettings().shortBaritonePrefix.value ? "B" : "Baritone");
-        baritone.setStyle(baritone.getStyle().withColor(ChatFormatting.LIGHT_PURPLE));
+        IChatComponent baritone = new ChatComponentText(xd ? "Baritoe" : BaritoneAPI.getSettings().shortBaritonePrefix.value ? "B" : "Baritone");
+        baritone.getChatStyle().setColor(EnumChatFormatting.LIGHT_PURPLE);
 
         // Outer brackets
-        MutableComponent prefix = Component.literal("");
-        prefix.setStyle(baritone.getStyle().withColor(ChatFormatting.DARK_PURPLE));
-        prefix.append("[");
-        prefix.append(baritone);
-        prefix.append("]");
+        IChatComponent prefix = new ChatComponentText("");
+        prefix.getChatStyle().setColor(EnumChatFormatting.DARK_PURPLE);
+        prefix.appendText("[");
+        prefix.appendSibling(baritone);
+        prefix.appendText("]");
 
         return prefix;
     }
@@ -78,8 +71,8 @@ public interface Helper {
      * @param title   The title to display in the popup
      * @param message The message to display in the popup
      */
-    default void logToast(Component title, Component message) {
-        Minecraft.getInstance().execute(() -> BaritoneAPI.getSettings().toaster.value.accept(title, message));
+    default void logToast(IChatComponent title, IChatComponent message) {
+        Minecraft.getMinecraft().func_152344_a(() -> BaritoneAPI.getSettings().toaster.value.accept(title, message));
     }
 
     /**
@@ -89,7 +82,7 @@ public interface Helper {
      * @param message The message to display in the popup
      */
     default void logToast(String title, String message) {
-        logToast(Component.literal(title), Component.literal(message));
+        logToast(new ChatComponentText(title), new ChatComponentText(message));
     }
 
     /**
@@ -98,7 +91,7 @@ public interface Helper {
      * @param message The message to display in the popup
      */
     default void logToast(String message) {
-        logToast(Helper.getPrefix(), Component.literal(message));
+        logToast(Helper.getPrefix(), new ChatComponentText(message));
     }
 
     /**
@@ -140,7 +133,7 @@ public interface Helper {
      * @param error   Whether to log as an error
      */
     default void logNotificationDirect(String message, boolean error) {
-        Minecraft.getInstance().execute(() -> BaritoneAPI.getSettings().notifier.value.accept(message, error));
+        Minecraft.getMinecraft().func_152344_a(() -> BaritoneAPI.getSettings().notifier.value.accept(message, error));
     }
 
     /**
@@ -165,17 +158,17 @@ public interface Helper {
      * @param logAsToast Whether to log as a toast notification
      * @param components The components to send
      */
-    default void logDirect(boolean logAsToast, Component... components) {
-        MutableComponent component = Component.literal("");
-        if (!logAsToast && !BaritoneAPI.getSettings().useMessageTag.value) {
-            component.append(getPrefix());
-            component.append(Component.literal(" "));
+    default void logDirect(boolean logAsToast, IChatComponent... components) {
+        IChatComponent component = new ChatComponentText("");
+        if (!logAsToast) {
+            component.appendSibling(getPrefix());
+            component.appendText(" ");
         }
-        Arrays.asList(components).forEach(component::append);
+        Arrays.asList(components).forEach(component::appendSibling);
         if (logAsToast) {
             logToast(getPrefix(), component);
         } else {
-            Minecraft.getInstance().execute(() -> BaritoneAPI.getSettings().logger.value.accept(component));
+            Minecraft.getMinecraft().func_152344_a(() -> BaritoneAPI.getSettings().logger.value.accept(component));
         }
     }
 
@@ -184,7 +177,7 @@ public interface Helper {
      *
      * @param components The components to send
      */
-    default void logDirect(Component... components) {
+    default void logDirect(IChatComponent... components) {
         logDirect(BaritoneAPI.getSettings().logAsToast.value, components);
     }
 
@@ -196,10 +189,10 @@ public interface Helper {
      * @param color      The color to print that message in
      * @param logAsToast Whether to log as a toast notification
      */
-    default void logDirect(String message, ChatFormatting color, boolean logAsToast) {
+    default void logDirect(String message, EnumChatFormatting color, boolean logAsToast) {
         Stream.of(message.split("\n")).forEach(line -> {
-            MutableComponent component = Component.literal(line.replace("\t", "    "));
-            component.setStyle(component.getStyle().withColor(color));
+            IChatComponent component = new ChatComponentText(line.replace("\t", "    "));
+            component.getChatStyle().setColor(color);
             logDirect(logAsToast, component);
         });
     }
@@ -211,7 +204,7 @@ public interface Helper {
      * @param message The message to display in chat
      * @param color   The color to print that message in
      */
-    default void logDirect(String message, ChatFormatting color) {
+    default void logDirect(String message, EnumChatFormatting color) {
         logDirect(message, color, BaritoneAPI.getSettings().logAsToast.value);
     }
 
@@ -223,7 +216,7 @@ public interface Helper {
      * @param logAsToast Whether to log as a toast notification
      */
     default void logDirect(String message, boolean logAsToast) {
-        logDirect(message, ChatFormatting.GRAY, logAsToast);
+        logDirect(message, EnumChatFormatting.GRAY, logAsToast);
     }
 
     /**
@@ -239,7 +232,7 @@ public interface Helper {
     default void logUnhandledException(final Throwable exception) {
         HELPER.logDirect("An unhandled exception occurred. " +
                         "The error is in your game's log, please report this at https://github.com/cabaletta/baritone/issues",
-                ChatFormatting.RED);
+                EnumChatFormatting.RED);
         exception.printStackTrace();
     }
 }

@@ -23,9 +23,8 @@ import baritone.api.utils.SettingsUtil;
 import baritone.api.utils.TypeUtils;
 import baritone.api.utils.gui.BaritoneToast;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.core.Vec3i;
-import net.minecraft.network.chat.Component;
+import net.minecraft.util.IChatComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -1278,12 +1277,11 @@ public final class Settings {
      * {@link Setting#value};
      */
     @JavaOnly
-    public final Setting<Consumer<Component>> logger = new Setting<>((msg) -> {
+    public final Setting<Consumer<IChatComponent>> logger = new Setting<>((msg) -> {
         try {
-            final GuiMessageTag tag = useMessageTag.value ? Helper.MESSAGE_TAG : null;
-            Minecraft.getInstance().gui.hud.getChat().addPlayerMessage(msg, null, tag);
+            Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(msg);
         } catch (Throwable t) {
-            LOGGER.warn("Failed to log message to chat: " + msg.getString(), t);
+            LOGGER.warn("Failed to log message to chat: " + msg.getUnformattedText(), t);
         }
     });
 
@@ -1301,7 +1299,7 @@ public final class Settings {
      * {@link Setting#value};
      */
     @JavaOnly
-    public final Setting<BiConsumer<Component, Component>> toaster = new Setting<>(BaritoneToast::addOrUpdate);
+    public final Setting<BiConsumer<IChatComponent, IChatComponent>> toaster = new Setting<>(BaritoneToast::addOrUpdate);
 
     /**
      * Print out ALL command exceptions as a stack trace to stdout, even simple syntax errors

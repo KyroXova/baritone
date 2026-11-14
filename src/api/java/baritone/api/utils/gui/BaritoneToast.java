@@ -18,12 +18,15 @@
 package baritone.api.utils.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.toasts.SystemToast;
-import net.minecraft.network.chat.Component;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.IChatComponent;
 
 public class BaritoneToast {
-    private static final SystemToast.SystemToastId BARITONE_TOAST_ID = new SystemToast.SystemToastId(5000L);
-    public static void addOrUpdate(Component title, Component subtitle) {
-        SystemToast.addOrUpdate(Minecraft.getInstance().gui.toastManager(), BARITONE_TOAST_ID, title, subtitle);
+    public static void addOrUpdate(IChatComponent title, IChatComponent subtitle) {
+        IChatComponent message = new ChatComponentText("");
+        message.appendSibling(title);
+        message.appendText(" ");
+        message.appendSibling(subtitle);
+        Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(message);
     }
 }
