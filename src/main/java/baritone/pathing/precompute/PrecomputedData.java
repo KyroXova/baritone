@@ -19,12 +19,13 @@ package baritone.pathing.precompute;
 
 import baritone.pathing.movement.MovementHelper;
 import baritone.utils.BlockStateInterface;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BlockState;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class PrecomputedData {
 
-    private final byte[] data = new byte[Block.BLOCK_STATE_REGISTRY.size()];
+    private final ConcurrentMap<BlockState, Byte> data = new ConcurrentHashMap<>();
 
     /**
      * byte layout
@@ -42,7 +43,7 @@ public class PrecomputedData {
     private static final byte CAN_WALK_ON_MAYBE_MASK = (byte) 1 << 5;
     private static final byte CAN_WALK_ON_MASK = (byte) 1 << 6;
 
-    private int fillData(int id, BlockState state) {
+    private byte fillData(BlockState state) {
         byte blockData = 0;
 
         Ternary canWalkOnState = MovementHelper.canWalkOnBlockState(state);
@@ -68,17 +69,11 @@ public class PrecomputedData {
 
         blockData |= COMPLETED_MASK;
 
-        data[id] = blockData; // in theory, this is thread "safe" because every thread should compute the exact same int to write?
         return blockData;
     }
 
     public boolean canWalkOn(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
-        int id = Block.BLOCK_STATE_REGISTRY.getId(state);
-        int blockData = data[id];
-
-        if ((blockData & COMPLETED_MASK) == 0) { // we need to fill in the data
-            blockData = fillData(id, state);
-        }
+        int blockData = data.computeIfAbsent(state, this::fillData);
 
         if ((blockData & CAN_WALK_ON_MAYBE_MASK) != 0) {
             return MovementHelper.canWalkOnPosition(bsi, x, y, z, state);
@@ -88,12 +83,7 @@ public class PrecomputedData {
     }
 
     public boolean canWalkThrough(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
-        int id = Block.BLOCK_STATE_REGISTRY.getId(state);
-        int blockData = data[id];
-
-        if ((blockData & COMPLETED_MASK) == 0) { // we need to fill in the data
-            blockData = fillData(id, state);
-        }
+        int blockData = data.computeIfAbsent(state, this::fillData);
 
         if ((blockData & CAN_WALK_THROUGH_MAYBE_MASK) != 0) {
             return MovementHelper.canWalkThroughPosition(bsi, x, y, z, state);
@@ -103,12 +93,7 @@ public class PrecomputedData {
     }
 
     public boolean fullyPassable(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
-        int id = Block.BLOCK_STATE_REGISTRY.getId(state);
-        int blockData = data[id];
-
-        if ((blockData & COMPLETED_MASK) == 0) { // we need to fill in the data
-            blockData = fillData(id, state);
-        }
+        int blockData = data.computeIfAbsent(state, this::fillData);
 
         if ((blockData & FULLY_PASSABLE_MAYBE_MASK) != 0) {
             return MovementHelper.fullyPassablePosition(bsi, x, y, z, state);
