@@ -11,7 +11,7 @@ package baritone.cache;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.BlockState;
 import baritone.api.utils.BlockUtils;
-import baritone.pathing.movement.MovementHelper;
+import baritone.pathing.movement.LegacyBlockRules;
 import baritone.utils.pathing.PathingBlockType;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -84,12 +84,12 @@ public final class ChunkPacker {
 
     private static PathingBlockType getPathingBlockType(BlockState state, Chunk chunk, int x, int y, int z) {
         Block block = state.getBlock();
-        if (MovementHelper.isWater(state)) {
-            if (MovementHelper.possiblyFlowing(state)
-                    || (x != 15 && MovementHelper.possiblyFlowing(getFromChunk(chunk, x + 1, y, z)))
-                    || (x != 0 && MovementHelper.possiblyFlowing(getFromChunk(chunk, x - 1, y, z)))
-                    || (z != 15 && MovementHelper.possiblyFlowing(getFromChunk(chunk, x, y, z + 1)))
-                    || (z != 0 && MovementHelper.possiblyFlowing(getFromChunk(chunk, x, y, z - 1)))) {
+        if (LegacyBlockRules.isWater(state)) {
+            if (LegacyBlockRules.possiblyFlowing(state)
+                    || (x != 15 && LegacyBlockRules.possiblyFlowing(getFromChunk(chunk, x + 1, y, z)))
+                    || (x != 0 && LegacyBlockRules.possiblyFlowing(getFromChunk(chunk, x - 1, y, z)))
+                    || (z != 15 && LegacyBlockRules.possiblyFlowing(getFromChunk(chunk, x, y, z + 1)))
+                    || (z != 0 && LegacyBlockRules.possiblyFlowing(getFromChunk(chunk, x, y, z - 1)))) {
                 return PathingBlockType.AVOID;
             }
             if (x == 0 || x == 15 || z == 0 || z == 15) {
@@ -99,7 +99,7 @@ public final class ChunkPacker {
             }
             return PathingBlockType.WATER;
         }
-        if (MovementHelper.avoidWalkingInto(state) || MovementHelper.isBottomSlab(state)) return PathingBlockType.AVOID;
+        if (LegacyBlockRules.avoidWalkingInto(state) || LegacyBlockRules.isBottomSlab(state)) return PathingBlockType.AVOID;
         if (block instanceof BlockAir || block instanceof BlockTallGrass || block instanceof BlockDoublePlant
                 || block instanceof BlockFlower) return PathingBlockType.AIR;
         return PathingBlockType.SOLID;
