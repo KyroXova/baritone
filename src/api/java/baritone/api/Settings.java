@@ -28,8 +28,8 @@ import net.minecraft.util.IChatComponent;
 import net.minecraft.item.Item;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
-import net.minecraft.world.level.block.Mirror;
-import net.minecraft.world.level.block.Rotation;
+import baritone.api.schematic.Mirror;
+import baritone.api.schematic.Rotation;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

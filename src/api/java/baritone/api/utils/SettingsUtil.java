@@ -1,33 +1,16 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.api.utils;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
+import baritone.api.schematic.Mirror;
+import baritone.api.schematic.Rotation;
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Holder;
-import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Mirror;
-import net.minecraft.world.level.block.Rotation;
+import net.minecraft.item.Item;
 
 import java.awt.*;
 import java.io.BufferedReader;
@@ -53,7 +36,6 @@ public class SettingsUtil {
 
     public static final String SETTINGS_DEFAULT_NAME = "settings.txt";
     private static final Pattern SETTING_PATTERN = Pattern.compile("^(?<setting>[^ ]+) +(?<value>.+)"); // key and value split by the first space
-
 
     private static boolean isComment(String line) {
         return line.startsWith("#") || line.startsWith("//");
@@ -82,7 +64,6 @@ public class SettingsUtil {
 
                 String settingName = matcher.group("setting").toLowerCase();
                 String settingValue = matcher.group("value");
-                // TODO remove soonish
                 if ("allowjumpat256".equals(settingName)) {
                     settingName = "allowjumpatbuildlimit";
                 }
@@ -113,7 +94,7 @@ public class SettingsUtil {
     }
 
     private static Path settingsByName(String name) {
-        return Minecraft.getInstance().gameDirectory.toPath().resolve("baritone").resolve(name);
+        return Minecraft.getMinecraft().mcDataDir.toPath().resolve("baritone").resolve(name);
     }
 
     public static List<Settings.Setting> modifiedSettings(Settings settings) {
@@ -124,7 +105,7 @@ public class SettingsUtil {
                 continue;
             }
             if (setting.isJavaOnly()) {
-                continue; // NO
+                continue;
             }
             if (setting.value == setting.defaultValue) {
                 continue;
@@ -136,9 +117,6 @@ public class SettingsUtil {
 
     /**
      * Gets the type of a setting and returns it as a string, with package names stripped.
-     * <p>
-     * For example, if the setting type is {@code java.util.List<java.lang.String>}, this function returns
-     * {@code List<String>}.
      *
      * @param setting The setting
      * @return The type
@@ -159,12 +137,10 @@ public class SettingsUtil {
     }
 
     public static String settingValueToString(Settings.Setting setting) throws IllegalArgumentException {
-        //noinspection unchecked
         return settingValueToString(setting, setting.value);
     }
 
     public static String settingDefaultToString(Settings.Setting setting) throws IllegalArgumentException {
-        //noinspection unchecked
         return settingValueToString(setting, setting.defaultValue);
     }
 
@@ -184,12 +160,6 @@ public class SettingsUtil {
         return setting.getName() + " " + settingValueToString(setting);
     }
 
-    /**
-     * Deprecated. Use {@link Settings.Setting#isJavaOnly()} instead.
-     *
-     * @param setting The Setting
-     * @return true if the setting can not be set or read by the user
-     */
     @Deprecated
     public static boolean javaOnlySetting(Settings.Setting setting) {
         return setting.isJavaOnly();
@@ -233,20 +203,20 @@ public class SettingsUtil {
                 str -> new Color(Integer.parseInt(str.split(",")[0]), Integer.parseInt(str.split(",")[1]), Integer.parseInt(str.split(",")[2])),
                 color -> color.getRed() + "," + color.getGreen() + "," + color.getBlue()
         ),
-        VEC3I(
-                Vec3i.class,
-                str -> new Vec3i(Integer.parseInt(str.split(",")[0]), Integer.parseInt(str.split(",")[1]), Integer.parseInt(str.split(",")[2])),
-                vec -> vec.getX() + "," + vec.getY() + "," + vec.getZ()
+        BETTER_BLOCK_POS(
+                BetterBlockPos.class,
+                str -> new BetterBlockPos(Integer.parseInt(str.split(",")[0]), Integer.parseInt(str.split(",")[1]), Integer.parseInt(str.split(",")[2])),
+                pos -> ((BetterBlockPos) pos).x + "," + ((BetterBlockPos) pos).y + "," + ((BetterBlockPos) pos).z
         ),
         BLOCK(
                 Block.class,
-                str -> BlockUtils.stringToBlockRequired(str.trim()),
-                BlockUtils::blockToString
+                str -> (Block) Block.blockRegistry.getObject(str.trim()),
+                block -> Block.blockRegistry.getNameForObject(block)
         ),
         ITEM(
-            Item.class,
-                str -> BuiltInRegistries.ITEM.get(Identifier.parse(str.trim())).map(Holder.Reference::value).orElse(null),
-                item -> BuiltInRegistries.ITEM.getKey(item).toString()
+                Item.class,
+                str -> (Item) Item.itemRegistry.getObject(str.trim()),
+                item -> Item.itemRegistry.getNameForObject(item)
         ),
         LIST() {
             @Override

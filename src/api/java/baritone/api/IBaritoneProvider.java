@@ -22,8 +22,8 @@ import baritone.api.command.ICommand;
 import baritone.api.command.ICommandSystem;
 import baritone.api.schematic.ISchematicSystem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.network.NetHandlerPlayClient;
 
 import java.util.List;
 import java.util.Objects;
@@ -49,17 +49,17 @@ public interface IBaritoneProvider {
      * returned by {@link #getPrimaryBaritone()}.
      *
      * @return All active {@link IBaritone} instances.
-     * @see #getBaritoneForPlayer(LocalPlayer)
+     * @see #getBaritoneForPlayer(EntityClientPlayerMP)
      */
     List<IBaritone> getAllBaritones();
 
     /**
-     * Provides the {@link IBaritone} instance for a given {@link LocalPlayer}.
+     * Provides the {@link IBaritone} instance for a given {@link EntityClientPlayerMP}.
      *
      * @param player The player
      * @return The {@link IBaritone} instance.
      */
-    default IBaritone getBaritoneForPlayer(LocalPlayer player) {
+    default IBaritone getBaritoneForPlayer(EntityClientPlayerMP player) {
         for (IBaritone baritone : this.getAllBaritones()) {
             if (Objects.equals(player, baritone.getPlayerContext().player())) {
                 return baritone;
@@ -89,10 +89,10 @@ public interface IBaritoneProvider {
      * @param connection The connection
      * @return The {@link IBaritone} instance.
      */
-    default IBaritone getBaritoneForConnection(ClientPacketListener connection) {
+    default IBaritone getBaritoneForConnection(NetHandlerPlayClient connection) {
         for (IBaritone baritone : this.getAllBaritones()) {
-            final LocalPlayer player = baritone.getPlayerContext().player();
-            if (player != null && player.connection == connection) {
+            final EntityClientPlayerMP player = baritone.getPlayerContext().player();
+            if (player != null && player.sendQueue == connection) {
                 return baritone;
             }
         }
