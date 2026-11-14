@@ -44,6 +44,7 @@ import baritone.utils.BaritoneProcessHelper;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.PathingCommandContext;
 import baritone.api.schematic.FillSchematic;
+import baritone.api.schematic.Mirror;
 import baritone.api.schematic.MirroredSchematic;
 import baritone.api.schematic.RotatedSchematic;
 import baritone.api.schematic.SubstituteSchematic;
@@ -99,10 +100,10 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (!Baritone.settings().buildSubstitutes.value.isEmpty()) {
             this.schematic = new SubstituteSchematic(this.schematic, Baritone.settings().buildSubstitutes.value);
         }
-        if (Baritone.settings().buildSchematicMirror.value != baritone.api.schematic.Mirror.NONE) {
+        if (Baritone.settings().buildSchematicMirror.value != Mirror.NONE) {
             this.schematic = new MirroredSchematic(this.schematic, Baritone.settings().buildSchematicMirror.value);
         }
-        if (Baritone.settings().buildSchematicRotation.value != baritone.api.schematic.Rotation.NONE) {
+        if (Baritone.settings().buildSchematicRotation.value != null && Baritone.settings().buildSchematicRotation.value.ordinal() != 0) {
             this.schematic = new RotatedSchematic(this.schematic, Baritone.settings().buildSchematicRotation.value);
         }
         this.schematic = new MaskSchematic(this.schematic) {
@@ -275,7 +276,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                         continue;
                     }
                     BlockState curr = bcc.bsi.get0(x, y, z);
-                    if (!(curr.getBlock() instanceof BlockAir) && !MovementHelper.isLiquid(curr.getBlock()) && !valid(curr, desired, false)) {
+                    if (!(curr.getBlock() instanceof BlockAir) && !MovementHelper.isLiquid(curr) && !valid(curr, desired, false)) {
                         BetterBlockPos pos = new BetterBlockPos(x, y, z);
                         Optional<Rotation> rot = RotationUtils.reachable(ctx, pos, ctx.playerController().getBlockReachDistance());
                         if (rot.isPresent()) {
@@ -384,7 +385,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
             float hitZ = (float) (result.hitVec.zCoord - result.blockZ);
             meta = block.onBlockPlaced(ctx.world(), result.blockX, result.blockY, result.blockZ, result.sideHit, hitX, hitY, hitZ, meta);
             BlockState wouldBePlaced = new BlockState(block, meta);
-            if (!itemBlock.canPlaceItemBlockOnSide(ctx.world(), result.blockX, result.blockY, result.blockZ, result.sideHit, ctx.player(), stack)) {
+            if (!itemBlock.func_150936_a(ctx.world(), result.blockX, result.blockY, result.blockZ, result.sideHit, ctx.player(), stack)) {
                 continue;
             }
             if (valid(wouldBePlaced, desired, true)) {
@@ -700,7 +701,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
                     missing.put(desired, 1 + missing.getOrDefault(desired, 0));
                 }
             } else {
-                if (MovementHelper.isLiquid(state.getBlock())) {
+                if (MovementHelper.isLiquid(state)) {
                     if (!MovementHelper.possiblyFlowing(state)) {
                         sourceLiquids.add(pos);
                     } else {
@@ -1015,7 +1016,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (desired == null) {
             return true;
         }
-        if (MovementHelper.isLiquid(current.getBlock()) && Baritone.settings().okIfWater.value) {
+        if (MovementHelper.isLiquid(current) && Baritone.settings().okIfWater.value) {
             return true;
         }
         if (current.getBlock() == Blocks.air && desired.getBlock() == Blocks.air) {

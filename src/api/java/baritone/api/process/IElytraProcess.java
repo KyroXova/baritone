@@ -36,4 +36,8 @@ public interface IElytraProcess extends IBaritoneProcess {
      * @return {@code true} if the native library loaded and elytra is actually usable
      */
     boolean isLoaded();
+
+    default boolean isSafeToCancel() {
+        return true;
+    }
 }

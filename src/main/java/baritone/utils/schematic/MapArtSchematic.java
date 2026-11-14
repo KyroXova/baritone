@@ -21,8 +21,8 @@ import baritone.api.schematic.IStaticSchematic;
 import baritone.api.schematic.MaskSchematic;
 import java.util.OptionalInt;
 import java.util.function.Predicate;
-import net.minecraft.world.level.block.AirBlock;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BlockState;
+import net.minecraft.block.BlockAir;
 
 public class MapArtSchematic extends MaskSchematic {
 
@@ -45,7 +45,7 @@ public class MapArtSchematic extends MaskSchematic {
         for (int x = 0; x < schematic.widthX(); x++) {
             for (int z = 0; z < schematic.lengthZ(); z++) {
                 BlockState[] column = schematic.getColumn(x, z);
-                OptionalInt lowestBlockY = lastIndexMatching(column, state -> !(state.getBlock() instanceof AirBlock));
+                OptionalInt lowestBlockY = lastIndexMatching(column, state -> !(state.getBlock() instanceof BlockAir));
                 if (lowestBlockY.isPresent()) {
                     heightMap[x][z] = lowestBlockY.getAsInt();
                 } else {

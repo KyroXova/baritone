@@ -94,7 +94,7 @@ public class Baritone implements IBaritone {
         this.mc = mc;
         this.gameEventHandler = new GameEventHandler(this);
 
-        this.directory = mc.gameDirectory.toPath().resolve("baritone");
+        this.directory = mc.mcDataDir.toPath().resolve("baritone");
         if (!Files.exists(this.directory)) {
             try {
                 Files.createDirectories(this.directory);
@@ -245,7 +245,7 @@ public class Baritone implements IBaritone {
         new Thread(() -> {
             try {
                 Thread.sleep(100);
-                mc.execute(() -> mc.gui.setScreen(new GuiClick()));
+                mc.displayGuiScreen(new GuiClick());
             } catch (Exception ignored) {}
         }).start();
     }

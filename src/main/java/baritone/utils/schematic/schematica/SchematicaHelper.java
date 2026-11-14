@@ -18,10 +18,11 @@
 package baritone.utils.schematic.schematica;
 
 import baritone.api.schematic.IStaticSchematic;
+import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Pair;
 import com.github.lunatrius.schematica.Schematica;
 import com.github.lunatrius.schematica.proxy.ClientProxy;
-import net.minecraft.core.BlockPos;
+
 import java.util.Optional;
 
 public enum SchematicaHelper {
@@ -36,9 +37,8 @@ public enum SchematicaHelper {
         }
     }
 
-    public static Optional<Pair<IStaticSchematic, BlockPos>> getOpenSchematic() {
+    public static Optional<Pair<IStaticSchematic, BetterBlockPos>> getOpenSchematic() {
         return Optional.ofNullable(ClientProxy.schematic)
-                .map(world -> new Pair<>(new SchematicAdapter(world), world.position));
+                .map(world -> new Pair<>(new SchematicAdapter(world), new BetterBlockPos(world.position.x, world.position.y, world.position.z)));
     }
-
 }

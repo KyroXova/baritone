@@ -26,6 +26,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author Brady
@@ -52,6 +53,6 @@ public enum SchematicSystem implements ISchematicSystem {
 
     @Override
     public List<String> getFileExtensions() {
-        return this.registry.stream().map(ISchematicFormat::getFileExtensions).flatMap(List::stream).toList();
+        return this.registry.stream().map(ISchematicFormat::getFileExtensions).flatMap(List::stream).collect(Collectors.toList());
     }
 }

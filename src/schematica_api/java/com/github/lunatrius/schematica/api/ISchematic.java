@@ -17,12 +17,13 @@
 
 package com.github.lunatrius.schematica.api;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.Block;
 
 public interface ISchematic {
 
-    BlockState getBlockState(BlockPos var1);
+    Block getBlock(int x, int y, int z);
+
+    int getBlockMetadata(int x, int y, int z);
 
     int getWidth();
 

@@ -41,7 +41,9 @@ public class InventoryPauserProcess extends BaritoneProcessHelper {
     }
 
     private double motion() {
-        return ctx.player().getDeltaMovement().multiply(1, 0, 1).length();
+        double mx = ctx.player().motionX;
+        double mz = ctx.player().motionZ;
+        return Math.sqrt(mx * mx + mz * mz);
     }
 
     private boolean stationaryNow() {

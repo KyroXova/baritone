@@ -17,26 +17,19 @@
 
 package com.github.lunatrius.core.util.math;
 
-import net.minecraft.core.BlockPos;
+public class MBlockPos {
 
-public class MBlockPos extends BlockPos {
+    public int x;
+    public int y;
+    public int z;
 
-    MBlockPos() {
-        super(6, 6, 6);
+    public MBlockPos() {
+        this(0, 0, 0);
     }
 
-    @Override
-    public int getX() {
-        throw new LinkageError("LOL");
-    }
-
-    @Override
-    public int getY() {
-        throw new LinkageError("LOL");
-    }
-
-    @Override
-    public int getZ() {
-        throw new LinkageError("LOL");
+    public MBlockPos(int x, int y, int z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 }

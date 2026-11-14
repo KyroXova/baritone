@@ -20,7 +20,7 @@ package baritone.utils.schematic;
 import baritone.api.schematic.AbstractSchematic;
 import baritone.api.schematic.IStaticSchematic;
 import java.util.List;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BlockState;
 
 /**
  * Default implementation of {@link IStaticSchematic}

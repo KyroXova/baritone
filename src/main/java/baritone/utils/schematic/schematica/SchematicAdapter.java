@@ -18,10 +18,13 @@
 package baritone.utils.schematic.schematica;
 
 import baritone.api.schematic.IStaticSchematic;
+import baritone.api.utils.BlockState;
+import com.github.lunatrius.schematica.api.ISchematic;
 import com.github.lunatrius.schematica.client.world.SchematicWorld;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
+
 import java.util.List;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
 
 public final class SchematicAdapter implements IStaticSchematic {
 
@@ -38,7 +41,16 @@ public final class SchematicAdapter implements IStaticSchematic {
 
     @Override
     public BlockState getDirect(int x, int y, int z) {
-        return this.schematic.getSchematic().getBlockState(new BlockPos(x, y, z));
+        ISchematic s = this.schematic.getSchematic();
+        if (s == null) {
+            return new BlockState(Blocks.air, 0);
+        }
+        Block block = s.getBlock(x, y, z);
+        if (block == null) {
+            block = Blocks.air;
+        }
+        int meta = s.getBlockMetadata(x, y, z);
+        return new BlockState(block, meta);
     }
 
     @Override
