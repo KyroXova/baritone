@@ -23,11 +23,11 @@ import baritone.api.utils.SettingsUtil;
 import baritone.api.utils.TypeUtils;
 import baritone.api.utils.gui.BaritoneToast;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Vec3i;
+import baritone.api.utils.BetterBlockPos;
 import net.minecraft.util.IChatComponent;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.item.Item;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 
@@ -227,17 +227,17 @@ public final class Settings {
      * Blocks that Baritone is allowed to place (as throwaway, for sneak bridging, pillaring, etc.)
      */
     public final Setting<List<Item>> acceptableThrowawayItems = new Setting<>(new ArrayList<>(Arrays.asList(
-            Blocks.DIRT.asItem(),
-            Blocks.COBBLESTONE.asItem(),
-            Blocks.NETHERRACK.asItem(),
-            Blocks.STONE.asItem()
+            Item.getItemFromBlock(Blocks.dirt),
+            Item.getItemFromBlock(Blocks.cobblestone),
+            Item.getItemFromBlock(Blocks.netherrack),
+            Item.getItemFromBlock(Blocks.stone)
     )));
 
     /**
      * Blocks that Baritone will attempt to avoid (Used in avoidance)
      */
-    public final Setting<List<Block>> blocksToAvoid = new Setting<>(new ArrayList<>(List.of(
-            Blocks.TRIPWIRE
+    public final Setting<List<Block>> blocksToAvoid = new Setting<>(new ArrayList<>(Arrays.asList(
+            Blocks.tripwire
     )));
 
     /**
@@ -251,10 +251,10 @@ public final class Settings {
      * blocks that baritone shouldn't break, but can if it needs to.
      */
     public final Setting<List<Block>> blocksToAvoidBreaking = new Setting<>(new ArrayList<>(Arrays.asList( // TODO can this be a HashSet or ImmutableSet?
-            Blocks.CRAFTING_TABLE,
-            Blocks.FURNACE,
-            Blocks.CHEST,
-            Blocks.TRAPPED_CHEST
+            Blocks.crafting_table,
+            Blocks.furnace,
+            Blocks.chest,
+            Blocks.trapped_chest
     )));
 
     /**
@@ -1037,7 +1037,7 @@ public final class Settings {
     /**
      * How far to move before repeating the build. 0 to disable repeating on a certain axis, 0,0,0 to disable entirely
      */
-    public final Setting<Vec3i> buildRepeat = new Setting<>(new Vec3i(0, 0, 0));
+    public final Setting<BetterBlockPos> buildRepeat = new Setting<>(new BetterBlockPos(0, 0, 0));
 
     /**
      * How many times to buildrepeat. -1 for infinite.
