@@ -34,6 +34,7 @@ import baritone.selection.SelectionManager;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.GuiClick;
 import baritone.utils.InputOverrideHandler;
+import baritone.utils.BlockInteraction;
 import baritone.utils.PathingControlManager;
 import baritone.utils.player.BaritonePlayerContext;
 import net.minecraft.client.Minecraft;
@@ -70,6 +71,7 @@ public class Baritone implements IBaritone {
     private final LookBehavior lookBehavior;
     private final InventoryBehavior inventoryBehavior;
     private final InputOverrideHandler inputOverrideHandler;
+    private final BlockInteraction blockInteraction;
 
     private final FollowProcess followProcess;
     private final MineProcess mineProcess;
@@ -103,6 +105,7 @@ public class Baritone implements IBaritone {
 
         // Define this before behaviors try and get it, or else it will be null and the builds will fail!
         this.playerContext = new BaritonePlayerContext(this, mc);
+        this.blockInteraction = new BlockInteraction(this.playerContext);
 
         {
             this.lookBehavior         = this.registerBehavior(LookBehavior::new);
@@ -155,6 +158,11 @@ public class Baritone implements IBaritone {
     @Override
     public InputOverrideHandler getInputOverrideHandler() {
         return this.inputOverrideHandler;
+    }
+
+    @Override
+    public BlockInteraction getBlockInteraction() {
+        return this.blockInteraction;
     }
 
     @Override

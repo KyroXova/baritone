@@ -27,6 +27,7 @@ import baritone.api.process.*;
 import baritone.api.selection.ISelectionManager;
 import baritone.api.utils.IInputOverrideHandler;
 import baritone.api.utils.IPlayerContext;
+import baritone.api.utils.IBlockInteraction;
 
 /**
  * @author Brady
@@ -114,6 +115,9 @@ public interface IBaritone {
      * @see IInputOverrideHandler
      */
     IInputOverrideHandler getInputOverrideHandler();
+
+    /** Targeted one-shot block actions for integrations. */
+    IBlockInteraction getBlockInteraction();
 
     /**
      * @return The {@link IPlayerContext} instance
