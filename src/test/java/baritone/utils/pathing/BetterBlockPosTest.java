@@ -28,6 +28,25 @@ public class BetterBlockPosTest {
     }
 
     @Test
+    public void vectorArithmeticAndCrossProduct() {
+        BetterBlockPos a = new BetterBlockPos(1, 2, 3);
+        BetterBlockPos b = new BetterBlockPos(4, 5, 6);
+        assertEquals(new BetterBlockPos(5, 7, 9), a.add(b));
+        assertEquals(new BetterBlockPos(5, 7, 9), a.offset(b));
+        assertEquals(new BetterBlockPos(-3, -3, -3), a.subtract(b));
+        assertEquals(new BetterBlockPos(3, 3, 3), b.subtract(a));
+        assertEquals(a, a.add(null));
+        assertEquals(a, a.subtract(null));
+
+        // Cross product of (1, 0, 0) and (0, 1, 0) is (0, 0, 1)
+        BetterBlockPos x = new BetterBlockPos(1, 0, 0);
+        BetterBlockPos y = new BetterBlockPos(0, 1, 0);
+        assertEquals(new BetterBlockPos(0, 0, 1), x.cross(y));
+        assertEquals(new BetterBlockPos(0, 0, -1), y.cross(x));
+        assertEquals(BetterBlockPos.ORIGIN, x.cross(x));
+    }
+
+    @Test
     public void serializationAndFloorHandleNegativeCoordinates() {
         BetterBlockPos pos = new BetterBlockPos(-12.1, -0.1, 25.9);
         assertEquals(new BetterBlockPos(-13, -1, 25), pos);

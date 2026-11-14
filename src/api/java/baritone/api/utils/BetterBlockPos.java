@@ -61,6 +61,34 @@ public final class BetterBlockPos {
         return dx == 0 && dy == 0 && dz == 0 ? this : new BetterBlockPos(x + dx, y + dy, z + dz);
     }
 
+    public BetterBlockPos offset(BetterBlockPos pos) {
+        return pos == null || (pos.x == 0 && pos.y == 0 && pos.z == 0) ? this : new BetterBlockPos(x + pos.x, y + pos.y, z + pos.z);
+    }
+
+    public BetterBlockPos add(BetterBlockPos pos) {
+        return offset(pos);
+    }
+
+    public BetterBlockPos add(int dx, int dy, int dz) {
+        return offset(dx, dy, dz);
+    }
+
+    public BetterBlockPos subtract(BetterBlockPos pos) {
+        return pos == null || (pos.x == 0 && pos.y == 0 && pos.z == 0) ? this : new BetterBlockPos(x - pos.x, y - pos.y, z - pos.z);
+    }
+
+    public BetterBlockPos subtract(int dx, int dy, int dz) {
+        return offset(-dx, -dy, -dz);
+    }
+
+    public BetterBlockPos cross(BetterBlockPos pos) {
+        return new BetterBlockPos(
+                this.y * pos.z - this.z * pos.y,
+                this.z * pos.x - this.x * pos.z,
+                this.x * pos.y - this.y * pos.x
+        );
+    }
+
     public BetterBlockPos(BetterBlockPos pos) {
         this(pos.x, pos.y, pos.z);
     }
