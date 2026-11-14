@@ -35,6 +35,8 @@ import baritone.utils.BlockStateInterface;
 import baritone.utils.GuiClick;
 import baritone.utils.InputOverrideHandler;
 import baritone.utils.BlockInteraction;
+import baritone.utils.InventoryControl;
+import baritone.utils.LoadedStructureDiscovery;
 import baritone.utils.PathingControlManager;
 import baritone.utils.player.BaritonePlayerContext;
 import net.minecraft.client.Minecraft;
@@ -72,6 +74,8 @@ public class Baritone implements IBaritone {
     private final InventoryBehavior inventoryBehavior;
     private final InputOverrideHandler inputOverrideHandler;
     private final BlockInteraction blockInteraction;
+    private final InventoryControl inventoryControl;
+    private final LoadedStructureDiscovery loadedStructureDiscovery;
 
     private final FollowProcess followProcess;
     private final MineProcess mineProcess;
@@ -106,6 +110,8 @@ public class Baritone implements IBaritone {
         // Define this before behaviors try and get it, or else it will be null and the builds will fail!
         this.playerContext = new BaritonePlayerContext(this, mc);
         this.blockInteraction = new BlockInteraction(this.playerContext);
+        this.inventoryControl = new InventoryControl(this.playerContext);
+        this.loadedStructureDiscovery = new LoadedStructureDiscovery(this.playerContext);
 
         {
             this.lookBehavior         = this.registerBehavior(LookBehavior::new);
@@ -164,6 +170,12 @@ public class Baritone implements IBaritone {
     public BlockInteraction getBlockInteraction() {
         return this.blockInteraction;
     }
+
+    @Override
+    public InventoryControl getInventoryControl() { return this.inventoryControl; }
+
+    @Override
+    public LoadedStructureDiscovery getLoadedStructureDiscovery() { return this.loadedStructureDiscovery; }
 
     @Override
     public CustomGoalProcess getCustomGoalProcess() {

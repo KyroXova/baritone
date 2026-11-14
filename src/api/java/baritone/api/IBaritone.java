@@ -28,6 +28,8 @@ import baritone.api.selection.ISelectionManager;
 import baritone.api.utils.IInputOverrideHandler;
 import baritone.api.utils.IPlayerContext;
 import baritone.api.utils.IBlockInteraction;
+import baritone.api.utils.IInventoryControl;
+import baritone.api.utils.ILoadedStructureDiscovery;
 
 /**
  * @author Brady
@@ -118,6 +120,10 @@ public interface IBaritone {
 
     /** Targeted one-shot block actions for integrations. */
     IBlockInteraction getBlockInteraction();
+
+    IInventoryControl getInventoryControl();
+
+    ILoadedStructureDiscovery getLoadedStructureDiscovery();
 
     /**
      * @return The {@link IPlayerContext} instance
