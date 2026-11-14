@@ -19,15 +19,12 @@ package baritone.api.utils;
 
 import baritone.api.cache.IWorldData;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.SlabBlock;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.entity.Entity;
+import net.minecraft.world.World;
+import net.minecraft.block.BlockSlab;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
 
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -41,14 +38,15 @@ public interface IPlayerContext {
 
     Minecraft minecraft();
 
-    LocalPlayer player();
+    EntityClientPlayerMP player();
 
     IPlayerController playerController();
 
-    Level world();
+    World world();
 
+    @SuppressWarnings("unchecked")
     default Iterable<Entity> entities() {
-        return ((ClientLevel) world()).entitiesForRendering();
+        return (Iterable<Entity>) world().loadedEntityList;
     }
 
     default Stream<Entity> entitiesStream() {
@@ -58,11 +56,11 @@ public interface IPlayerContext {
 
     IWorldData worldData();
 
-    HitResult objectMouseOver();
+    MovingObjectPosition objectMouseOver();
 
     default BetterBlockPos playerFeet() {
         // TODO find a better way to deal with soul sand!!!!!
-        BetterBlockPos feet = new BetterBlockPos(player().position().x, player().position().y + 0.1251, player().position().z);
+        BetterBlockPos feet = new BetterBlockPos(player().posX, player().boundingBox.minY + 0.1251, player().posZ);
 
         // sometimes when calling this from another thread or while world is null, it'll throw a NullPointerException
         // that causes the game to immediately crash
@@ -73,7 +71,7 @@ public interface IPlayerContext {
         // this does not impact performance at all since we're not null checking constantly
         // if there is an exception, the only overhead is Java generating the exception object... so we can ignore it
         try {
-            if (world().getBlockState(feet).getBlock() instanceof SlabBlock) {
+            if (world().getBlock(feet.x, feet.y, feet.z) instanceof BlockSlab) {
                 return feet.above();
             }
         } catch (NullPointerException ignored) {}
@@ -82,21 +80,21 @@ public interface IPlayerContext {
     }
 
     default Vec3 playerFeetAsVec() {
-        return new Vec3(player().position().x, player().position().y, player().position().z);
+        return Vec3.createVectorHelper(player().posX, player().boundingBox.minY, player().posZ);
     }
 
     default Vec3 playerHead() {
-        return new Vec3(player().position().x, player().position().y + player().getEyeHeight(), player().position().z);
+        return Vec3.createVectorHelper(player().posX, player().posY + player().getEyeHeight(), player().posZ);
     }
 
     default Vec3 playerMotion() {
-        return player().getDeltaMovement();
+        return Vec3.createVectorHelper(player().motionX, player().motionY, player().motionZ);
     }
 
     BetterBlockPos viewerPos();
 
     default Rotation playerRotations() {
-        return new Rotation(player().getYRot(), player().getXRot());
+        return new Rotation(player().rotationYaw, player().rotationPitch);
     }
 
     /**
@@ -116,15 +114,15 @@ public interface IPlayerContext {
      *
      * @return The position of the highlighted block
      */
-    default Optional<BlockPos> getSelectedBlock() {
-        HitResult result = objectMouseOver();
-        if (result != null && result.getType() == HitResult.Type.BLOCK) {
-            return Optional.of(((BlockHitResult) result).getBlockPos());
+    default Optional<BetterBlockPos> getSelectedBlock() {
+        MovingObjectPosition result = objectMouseOver();
+        if (result != null && result.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK) {
+            return Optional.of(new BetterBlockPos(result.blockX, result.blockY, result.blockZ));
         }
         return Optional.empty();
     }
 
-    default boolean isLookingAt(BlockPos pos) {
+    default boolean isLookingAt(BetterBlockPos pos) {
         return getSelectedBlock().equals(Optional.of(pos));
     }
 }

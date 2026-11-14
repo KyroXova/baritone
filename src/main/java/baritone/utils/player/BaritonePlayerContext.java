@@ -21,10 +21,10 @@ import baritone.Baritone;
 import baritone.api.cache.IWorldData;
 import baritone.api.utils.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.HitResult;
+import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.entity.Entity;
+import net.minecraft.world.World;
+import net.minecraft.util.MovingObjectPosition;
 
 /**
  * Implementation of {@link IPlayerContext} that provides information about the primary player.
@@ -50,8 +50,8 @@ public final class BaritonePlayerContext implements IPlayerContext {
     }
 
     @Override
-    public LocalPlayer player() {
-        return this.mc.player;
+    public EntityClientPlayerMP player() {
+        return this.mc.thePlayer;
     }
 
     @Override
@@ -60,8 +60,8 @@ public final class BaritonePlayerContext implements IPlayerContext {
     }
 
     @Override
-    public Level world() {
-        return this.mc.level;
+    public World world() {
+        return this.mc.theWorld;
     }
 
     @Override
@@ -71,8 +71,8 @@ public final class BaritonePlayerContext implements IPlayerContext {
 
     @Override
     public BetterBlockPos viewerPos() {
-        final Entity entity = this.mc.getCameraEntity();
-        return entity == null ? this.playerFeet() : BetterBlockPos.from(entity.blockPosition());
+        final Entity entity = this.mc.renderViewEntity;
+        return entity == null ? this.playerFeet() : new BetterBlockPos(entity.posX, entity.posY, entity.posZ);
     }
 
     @Override
@@ -81,7 +81,7 @@ public final class BaritonePlayerContext implements IPlayerContext {
     }
 
     @Override
-    public HitResult objectMouseOver() {
+    public MovingObjectPosition objectMouseOver() {
         return RayTraceUtils.rayTraceTowards(player(), playerRotations(), playerController().getBlockReachDistance());
     }
 }
