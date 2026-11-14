@@ -110,7 +110,7 @@ public class Baritone implements IBaritone {
         // Define this before behaviors try and get it, or else it will be null and the builds will fail!
         this.playerContext = new BaritonePlayerContext(this, mc);
         this.blockInteraction = new BlockInteraction(this.playerContext);
-        this.inventoryControl = new InventoryControl(this.playerContext);
+        this.inventoryControl = new InventoryControl(this.playerContext, this.blockInteraction);
         this.loadedStructureDiscovery = new LoadedStructureDiscovery(this.playerContext);
 
         {

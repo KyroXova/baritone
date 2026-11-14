@@ -3,19 +3,24 @@ package baritone.utils;
 
 import baritone.api.utils.IInventoryControl;
 import baritone.api.utils.IPlayerContext;
+import baritone.api.utils.IBlockInteraction;
+import baritone.api.utils.BetterBlockPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Vec3;
+import net.minecraftforge.common.util.ForgeDirection;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class InventoryControl implements IInventoryControl {
     private final IPlayerContext ctx;
+    private final IBlockInteraction blocks;
 
-    public InventoryControl(IPlayerContext ctx) { this.ctx = ctx; }
+    public InventoryControl(IPlayerContext ctx, IBlockInteraction blocks) { this.ctx = ctx; this.blocks = blocks; }
 
     private Result available() {
         Minecraft mc = ctx.minecraft();
@@ -46,6 +51,23 @@ public final class InventoryControl implements IInventoryControl {
         int containerSlot = inventorySlot < 9 ? inventorySlot + 36 : inventorySlot;
         ctx.playerController().windowClick(player.inventoryContainer.windowId, containerSlot, hotbarSlot, 2, player);
         return Result.ATTEMPTED;
+    }
+
+    @Override
+    public Result useHotbarItem(int slot) {
+        Result result = available();
+        if (result != Result.ATTEMPTED) return result;
+        if (slot < 0 || slot >= 9) return Result.INVALID_SLOT;
+        if (ctx.player().inventory.getStackInSlot(slot) == null) return Result.NO_ITEM;
+        ctx.player().inventory.currentItem = slot;
+        ctx.playerController().syncHeldItem();
+        ctx.playerController().processRightClick(ctx.player(), ctx.world());
+        return Result.ATTEMPTED;
+    }
+
+    @Override
+    public IBlockInteraction.Result openBlockContainer(BetterBlockPos pos, ForgeDirection face, Vec3 hit, boolean requireLineOfSight) {
+        return blocks.useBlock(pos, face, hit, false, requireLineOfSight);
     }
 
     @Override
