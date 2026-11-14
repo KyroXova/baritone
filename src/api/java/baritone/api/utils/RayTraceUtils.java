@@ -17,11 +17,11 @@
 
 package baritone.api.utils;
 
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Pose;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
 
 /**
  * @author Brady
@@ -41,28 +41,46 @@ public final class RayTraceUtils {
      * @param blockReachDistance The block reach distance of the entity
      * @return The calculated raytrace result
      */
-    public static HitResult rayTraceTowards(Entity entity, Rotation rotation, double blockReachDistance) {
+    public static MovingObjectPosition rayTraceTowards(Entity entity, Rotation rotation, double blockReachDistance) {
         return rayTraceTowards(entity, rotation, blockReachDistance, false);
     }
 
-    public static HitResult rayTraceTowards(Entity entity, Rotation rotation, double blockReachDistance, boolean wouldSneak) {
+    public static MovingObjectPosition rayTraceTowards(Entity entity, Rotation rotation, double blockReachDistance, boolean wouldSneak) {
         Vec3 start;
         if (wouldSneak) {
             start = inferSneakingEyePosition(entity);
         } else {
-            start = entity.getEyePosition(1.0F); // do whatever is correct
+            start = eyePosition(entity);
         }
         
-        Vec3 direction = RotationUtils.calcLookDirectionFromRotation(rotation);
-        Vec3 end = start.add(
-                direction.x * blockReachDistance,
-                direction.y * blockReachDistance,
-                direction.z * blockReachDistance
+        Vec3 direction = lookDirection(rotation);
+        Vec3 end = start.addVector(
+                direction.xCoord * blockReachDistance,
+                direction.yCoord * blockReachDistance,
+                direction.zCoord * blockReachDistance
         );
-        return entity.level().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, entity));
+        return entity.worldObj.func_147447_a(start, end, false, false, true);
     }
 
     public static Vec3 inferSneakingEyePosition(Entity entity) {
-        return new Vec3(entity.getX(), entity.getY() + entity.getEyeHeight(Pose.CROUCHING), entity.getZ());
+        // 1.7.10 does not expose a pose-specific eye height; use its current
+        // ray-trace origin, including Forge's player eye-height adjustment.
+        return eyePosition(entity);
+    }
+
+    private static Vec3 eyePosition(Entity entity) {
+        if (entity instanceof EntityLivingBase) {
+            return ((EntityLivingBase) entity).getPosition(1.0F);
+        }
+        return Vec3.createVectorHelper(entity.posX, entity.posY, entity.posZ);
+    }
+
+    static Vec3 lookDirection(Rotation rotation) {
+        float radians = (float) (Math.PI / 180.0);
+        float flatZ = MathHelper.cos(-rotation.getYaw() * radians - (float) Math.PI);
+        float flatX = MathHelper.sin(-rotation.getYaw() * radians - (float) Math.PI);
+        float pitchBase = -MathHelper.cos(-rotation.getPitch() * radians);
+        float pitchHeight = MathHelper.sin(-rotation.getPitch() * radians);
+        return Vec3.createVectorHelper(flatX * pitchBase, pitchHeight, flatZ * pitchBase);
     }
 }

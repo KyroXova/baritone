@@ -84,7 +84,7 @@ public interface IPlayerContext {
     }
 
     default Vec3 playerHead() {
-        return Vec3.createVectorHelper(player().posX, player().posY + player().getEyeHeight(), player().posZ);
+        return player().getPosition(1.0F);
     }
 
     default Vec3 playerMotion() {
