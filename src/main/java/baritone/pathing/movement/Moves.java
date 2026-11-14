@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.pathing.movement;
@@ -20,7 +7,7 @@ package baritone.pathing.movement;
 import baritone.api.utils.BetterBlockPos;
 import baritone.pathing.movement.movements.*;
 import baritone.utils.pathing.MutableMoveResult;
-import net.minecraft.core.Direction;
+import net.minecraftforge.common.util.ForgeDirection;
 
 /**
  * An enum of all possible movements attached to all possible directions they could be taken in
@@ -225,7 +212,7 @@ public enum Moves {
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
             MutableMoveResult res = new MutableMoveResult();
             apply(context, src.x, src.y, src.z, res);
-            return new MovementDiagonal(context.getBaritone(), src, Direction.NORTH, Direction.EAST, res.y - src.y);
+            return new MovementDiagonal(context.getBaritone(), src, ForgeDirection.NORTH, ForgeDirection.EAST, res.y - src.y);
         }
 
         @Override
@@ -239,7 +226,7 @@ public enum Moves {
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
             MutableMoveResult res = new MutableMoveResult();
             apply(context, src.x, src.y, src.z, res);
-            return new MovementDiagonal(context.getBaritone(), src, Direction.NORTH, Direction.WEST, res.y - src.y);
+            return new MovementDiagonal(context.getBaritone(), src, ForgeDirection.NORTH, ForgeDirection.WEST, res.y - src.y);
         }
 
         @Override
@@ -253,7 +240,7 @@ public enum Moves {
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
             MutableMoveResult res = new MutableMoveResult();
             apply(context, src.x, src.y, src.z, res);
-            return new MovementDiagonal(context.getBaritone(), src, Direction.SOUTH, Direction.EAST, res.y - src.y);
+            return new MovementDiagonal(context.getBaritone(), src, ForgeDirection.SOUTH, ForgeDirection.EAST, res.y - src.y);
         }
 
         @Override
@@ -267,7 +254,7 @@ public enum Moves {
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
             MutableMoveResult res = new MutableMoveResult();
             apply(context, src.x, src.y, src.z, res);
-            return new MovementDiagonal(context.getBaritone(), src, Direction.SOUTH, Direction.WEST, res.y - src.y);
+            return new MovementDiagonal(context.getBaritone(), src, ForgeDirection.SOUTH, ForgeDirection.WEST, res.y - src.y);
         }
 
         @Override
@@ -279,48 +266,48 @@ public enum Moves {
     PARKOUR_NORTH(0, 0, -4, true, true) {
         @Override
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
-            return MovementParkour.cost(context, src, Direction.NORTH);
+            return MovementParkour.cost(context, src, ForgeDirection.NORTH);
         }
 
         @Override
         public void apply(CalculationContext context, int x, int y, int z, MutableMoveResult result) {
-            MovementParkour.cost(context, x, y, z, Direction.NORTH, result);
+            MovementParkour.cost(context, x, y, z, ForgeDirection.NORTH, result);
         }
     },
 
     PARKOUR_SOUTH(0, 0, +4, true, true) {
         @Override
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
-            return MovementParkour.cost(context, src, Direction.SOUTH);
+            return MovementParkour.cost(context, src, ForgeDirection.SOUTH);
         }
 
         @Override
         public void apply(CalculationContext context, int x, int y, int z, MutableMoveResult result) {
-            MovementParkour.cost(context, x, y, z, Direction.SOUTH, result);
+            MovementParkour.cost(context, x, y, z, ForgeDirection.SOUTH, result);
         }
     },
 
     PARKOUR_EAST(+4, 0, 0, true, true) {
         @Override
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
-            return MovementParkour.cost(context, src, Direction.EAST);
+            return MovementParkour.cost(context, src, ForgeDirection.EAST);
         }
 
         @Override
         public void apply(CalculationContext context, int x, int y, int z, MutableMoveResult result) {
-            MovementParkour.cost(context, x, y, z, Direction.EAST, result);
+            MovementParkour.cost(context, x, y, z, ForgeDirection.EAST, result);
         }
     },
 
     PARKOUR_WEST(-4, 0, 0, true, true) {
         @Override
         public Movement apply0(CalculationContext context, BetterBlockPos src) {
-            return MovementParkour.cost(context, src, Direction.WEST);
+            return MovementParkour.cost(context, src, ForgeDirection.WEST);
         }
 
         @Override
         public void apply(CalculationContext context, int x, int y, int z, MutableMoveResult result) {
-            MovementParkour.cost(context, x, y, z, Direction.WEST, result);
+            MovementParkour.cost(context, x, y, z, ForgeDirection.WEST, result);
         }
     };
 
