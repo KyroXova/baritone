@@ -1,24 +1,8 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.api.event.events;
-
-import com.mojang.blaze3d.vertex.PoseStack;
-import org.joml.Matrix4f;
 
 /**
  * @author Brady
@@ -31,13 +15,8 @@ public final class RenderEvent {
      */
     private final float partialTicks;
 
-    private final Matrix4f projectionMatrix;
-    private final PoseStack modelViewStack;
-
-    public RenderEvent(float partialTicks, PoseStack modelViewStack, Matrix4f projectionMatrix) {
+    public RenderEvent(float partialTicks) {
         this.partialTicks = partialTicks;
-        this.modelViewStack = modelViewStack;
-        this.projectionMatrix = projectionMatrix;
     }
 
     /**
@@ -45,13 +24,5 @@ public final class RenderEvent {
      */
     public final float getPartialTicks() {
         return this.partialTicks;
-    }
-
-    public PoseStack getModelViewStack() {
-        return this.modelViewStack;
-    }
-
-    public Matrix4f getProjectionMatrix() {
-        return this.projectionMatrix;
     }
 }

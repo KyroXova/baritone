@@ -1,27 +1,14 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.api.process;
 
 import baritone.api.schematic.ISchematic;
+import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
-import net.minecraft.world.level.block.state.BlockState;
+
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +26,7 @@ public interface IBuilderProcess extends IBaritoneProcess {
      * @param schematic The object representation of the schematic
      * @param origin    The origin position of the schematic being built
      */
-    void build(String name, ISchematic schematic, Vec3i origin);
+    void build(String name, ISchematic schematic, BetterBlockPos origin);
 
     /**
      * Requests a build for the specified schematic, labeled as specified, with the specified origin.
@@ -49,11 +36,11 @@ public interface IBuilderProcess extends IBaritoneProcess {
      * @param origin    The origin position of the schematic being built
      * @return Whether or not the schematic was able to load from file
      */
-    boolean build(String name, File schematic, Vec3i origin);
+    boolean build(String name, File schematic, BetterBlockPos origin);
 
     @Deprecated
-    default boolean build(String schematicFile, BlockPos origin) {
-        File file = new File(new File(Minecraft.getInstance().gameDirectory, "schematics"), schematicFile);
+    default boolean build(String schematicFile, BetterBlockPos origin) {
+        File file = new File(new File(Minecraft.getMinecraft().mcDataDir, "schematics"), schematicFile);
         return build(schematicFile, file, origin);
     }
 
@@ -67,7 +54,7 @@ public interface IBuilderProcess extends IBaritoneProcess {
 
     void resume();
 
-    void clearArea(BlockPos corner1, BlockPos corner2);
+    void clearArea(BetterBlockPos corner1, BetterBlockPos corner2);
 
     /**
      * @return A list of block states that are estimated to be placeable by this builder process. You can use this in
@@ -75,6 +62,7 @@ public interface IBuilderProcess extends IBaritoneProcess {
      * cause it to give up. This is updated every tick, but only while the builder process is active.
      */
     List<BlockState> getApproxPlaceable();
+
     /**
      * Returns the lower bound of the current mining layer if mineInLayers is true.
      * If mineInLayers is false, this will return an empty optional.

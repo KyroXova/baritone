@@ -1,23 +1,10 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.api.process;
 
-import net.minecraft.core.BlockPos;
+import baritone.api.utils.BetterBlockPos;
 
 public interface IFarmProcess extends IBaritoneProcess {
 
@@ -28,7 +15,7 @@ public interface IFarmProcess extends IBaritoneProcess {
      * @param range The distance from center to farm from
      * @param pos   The center position to base the range from
      */
-    void farm(int range, BlockPos pos);
+    void farm(int range, BetterBlockPos pos);
 
     /**
      * Begin to search for nearby crops to farm.
