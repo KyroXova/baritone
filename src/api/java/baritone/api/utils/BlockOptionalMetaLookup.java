@@ -1,27 +1,12 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.api.utils;
 
-import baritone.api.utils.accessor.IItemStack;
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.Block;
+import net.minecraft.item.ItemStack;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -54,7 +39,6 @@ public class BlockOptionalMetaLookup {
         this(Stream.of(blocks)
                 .map(BlockOptionalMeta::new)
                 .toArray(BlockOptionalMeta[]::new));
-
     }
 
     public BlockOptionalMetaLookup(List<Block> blocks) {
@@ -78,9 +62,11 @@ public class BlockOptionalMetaLookup {
     }
 
     public boolean has(ItemStack stack) {
-        int hash = ((IItemStack) (Object) stack).getBaritoneHash();
-        hash -= stack.getDamageValue();
-        return stackHashes.contains(hash);
+        if (stack == null) return false;
+        for (BlockOptionalMeta bom : boms) {
+            if (bom.matches(stack)) return true;
+        }
+        return false;
     }
 
     public List<BlockOptionalMeta> blocks() {
