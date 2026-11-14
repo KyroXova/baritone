@@ -96,7 +96,7 @@ public final class GameEventHandler implements IEventBus, Helper {
         // to make sure the chunk being unloaded is already loaded.
         boolean isPreUnload = state == EventState.PRE
                 && type == ChunkEvent.Type.UNLOAD
-                && world != null && world.getChunkProvider().chunkExists(event.getX(), event.getZ());
+                && world != null && !world.getChunkProvider().provideChunk(event.getX(), event.getZ()).isEmpty();
 
         if (event.isPostPopulate() || isPreUnload) {
             baritone.getWorldProvider().ifWorldLoaded(worldData -> {
