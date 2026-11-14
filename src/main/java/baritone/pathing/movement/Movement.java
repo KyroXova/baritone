@@ -64,7 +64,7 @@ public abstract class Movement implements IMovement, MovementHelper {
 
     protected Movement(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest, BetterBlockPos[] toBreak, BetterBlockPos toPlace) {
         this.baritone = baritone;
-        this.ctx = baritone.getPlayerContext();
+        this.ctx = baritone != null ? baritone.getPlayerContext() : null;
         this.src = src;
         this.dest = dest;
         this.positionsToBreak = toBreak;
