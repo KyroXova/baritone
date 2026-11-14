@@ -36,10 +36,14 @@ sourceSets {
 dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm:9.7'
+    compileOnly 'org.ow2.asm:asm-tree:9.7'
+    compileOnly 'org.ow2.asm:asm-commons:9.7'
     implementation 'dev.babbaj:nether-pathfinder:1.6'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'it.unimi.dsi:fastutil:8.5.12'
     implementation 'org.slf4j:slf4j-api:1.7.30'
+    testImplementation 'org.lwjgl.lwjgl:lwjgl:2.9.4-nightly-20150209'
+    testImplementation 'org.lwjgl.lwjgl:lwjgl_util:2.9.4-nightly-20150209'
     testImplementation 'junit:junit:4.13.2'
 }
 

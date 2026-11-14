@@ -20,9 +20,15 @@ classes/
 *.ipr
 *.iws
 /logs/
+legacy-build/logs/
+legacy-build/build/
 
 tweaker/logs/
+legacy-build/logs/
+legacy-build/build/
 common/logs/
+legacy-build/logs/
+legacy-build/build/
 
 # Eclipse Files
 .classpath

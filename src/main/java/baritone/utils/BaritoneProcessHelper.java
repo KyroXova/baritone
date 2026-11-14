@@ -29,7 +29,7 @@ public abstract class BaritoneProcessHelper implements IBaritoneProcess, Helper 
 
     public BaritoneProcessHelper(Baritone baritone) {
         this.baritone = baritone;
-        this.ctx = baritone.getPlayerContext();
+        this.ctx = baritone != null ? baritone.getPlayerContext() : null;
     }
 
     @Override
