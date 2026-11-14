@@ -61,7 +61,7 @@ public class BlockStateInterface {
 
     public BlockStateInterface(IPlayerContext ctx, boolean copyLoadedChunks) {
         this.world = ctx.world();
-        this.worldBorder = new BetterWorldBorder(world.getWorldBorder());
+        this.worldBorder = new BetterWorldBorder();
         this.worldData = (WorldData) ctx.worldData();
         if (copyLoadedChunks) {
             this.provider = ((IClientChunkProvider) world.getChunkSource()).createThreadSafeCopy();

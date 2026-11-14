@@ -158,7 +158,7 @@ public class CalculationContext {
         // why cache these things here, why not let the movements just get directly from settings?
         // because if some movements are calculated one way and others are calculated another way,
         // then you get a wildly inconsistent path that isn't optimal for either scenario.
-        this.worldBorder = new BetterWorldBorder(world.getWorldBorder());
+        this.worldBorder = new BetterWorldBorder();
     }
 
     public final IBaritone getBaritone() {

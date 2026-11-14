@@ -17,34 +17,21 @@
 
 package baritone.utils.pathing;
 
-import net.minecraft.world.level.border.WorldBorder;
-
 /**
- * Essentially, a "rule" for the path finder, prevents proposed movements from attempting to venture
- * into the world border, and prevents actual movements from placing blocks in the world border.
+ * Bounds pathfinding to Minecraft 1.7.10's fixed horizontal world limits.
  */
 public class BetterWorldBorder {
 
-    private final double minX;
-    private final double maxX;
-    private final double minZ;
-    private final double maxZ;
-
-    public BetterWorldBorder(WorldBorder border) {
-        this.minX = border.getMinX();
-        this.maxX = border.getMaxX();
-        this.minZ = border.getMinZ();
-        this.maxZ = border.getMaxZ();
-    }
+    private static final int LIMIT = 30000000;
 
     public boolean entirelyContains(int x, int z) {
-        return x + 1 > minX && x < maxX && z + 1 > minZ && z < maxZ;
+        return x >= -LIMIT && x < LIMIT && z >= -LIMIT && z < LIMIT;
     }
 
     public boolean canPlaceAt(int x, int z) {
         // move it in 1 block on all sides
         // because we can't place a block at the very edge against a block outside the border
         // it won't let us right click it
-        return x > minX && x + 1 < maxX && z > minZ && z + 1 < maxZ;
+        return x > -LIMIT && x < LIMIT - 1 && z > -LIMIT && z < LIMIT - 1;
     }
 }
