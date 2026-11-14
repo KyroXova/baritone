@@ -245,9 +245,28 @@ public class Baritone implements IBaritone {
         new Thread(() -> {
             try {
                 Thread.sleep(100);
-                mc.displayGuiScreen(new GuiClick());
+                executeOnClientThread(() -> mc.displayGuiScreen(new GuiClick()));
             } catch (Exception ignored) {}
         }).start();
+    }
+
+    private final java.util.Queue<Runnable> taskQueue = new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    public void executeOnClientThread(Runnable r) {
+        if (r != null) {
+            taskQueue.add(r);
+        }
+    }
+
+    public void drainScheduledTasks() {
+        Runnable r;
+        while ((r = taskQueue.poll()) != null) {
+            try {
+                r.run();
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
+        }
     }
 
     public Path getDirectory() {

@@ -43,13 +43,14 @@ public class BlockStateInterface {
     }
 
     public BlockStateInterface(IPlayerContext ctx, boolean copyLoadedChunks) {
-        if (!ctx.minecraft().func_152345_ab()) {
+        if (ctx.minecraft() != null && !ctx.minecraft().func_152345_ab()) {
             throw new IllegalStateException("BlockStateInterface must be constructed on the client thread");
         }
         this.world = ctx.world();
         this.worldData = (WorldData) ctx.worldData();
-        this.provider = (ChunkProviderClient) world.getChunkProvider();
-        this.loadedSnapshot = copyLoadedChunks
+        this.provider = world != null && world.getChunkProvider() instanceof ChunkProviderClient
+                ? (ChunkProviderClient) world.getChunkProvider() : null;
+        this.loadedSnapshot = copyLoadedChunks && provider instanceof IClientChunkProvider
                 ? ((IClientChunkProvider) provider).snapshotLoadedChunks() : null;
         this.useTheRealWorld = !Baritone.settings().pathThroughCachedOnly.value;
         this.worldBorder = new BetterWorldBorder();
@@ -60,8 +61,11 @@ public class BlockStateInterface {
         if (loadedSnapshot != null) {
             return loadedSnapshot.get(ChunkCoordIntPair.chunkXZ2Int(chunkX, chunkZ));
         }
+        if (provider == null) {
+            return null;
+        }
         Chunk chunk = provider.provideChunk(chunkX, chunkZ);
-        return chunk.isEmpty() ? null : chunk;
+        return chunk == null || chunk.isEmpty() ? null : chunk;
     }
 
     public boolean worldContainsLoadedChunk(int blockX, int blockZ) {

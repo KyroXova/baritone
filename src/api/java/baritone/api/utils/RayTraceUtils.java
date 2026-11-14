@@ -63,9 +63,11 @@ public final class RayTraceUtils {
     }
 
     public static Vec3 inferSneakingEyePosition(Entity entity) {
-        // 1.7.10 does not expose a pose-specific eye height; use its current
-        // ray-trace origin, including Forge's player eye-height adjustment.
-        return eyePosition(entity);
+        Vec3 eye = eyePosition(entity);
+        if (entity != null && !entity.isSneaking()) {
+            return eye.addVector(0, -0.08D, 0);
+        }
+        return eye;
     }
 
     private static Vec3 eyePosition(Entity entity) {
