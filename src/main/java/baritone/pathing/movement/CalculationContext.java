@@ -84,6 +84,10 @@ public class CalculationContext {
     }
 
     public CalculationContext(IBaritone baritone, boolean forUseOnAnotherThread) {
+        this(baritone, forUseOnAnotherThread, false);
+    }
+
+    public CalculationContext(IBaritone baritone, boolean forUseOnAnotherThread, boolean forbidBreaking) {
         this.precomputedData = new PrecomputedData();
         this.safeForThreadedUse = forUseOnAnotherThread;
         this.baritone = baritone;
@@ -104,8 +108,8 @@ public class CalculationContext {
         this.hasWaterBucket = Baritone.settings().allowWaterBucketFall.value && waterBucketOnHotbar && !world.provider.isHellWorld;
         this.canSprint = Baritone.settings().allowSprint.value && player.getFoodStats().getFoodLevel() > 6;
         this.placeBlockCost = Baritone.settings().blockPlacementPenalty.value;
-        this.allowBreak = Baritone.settings().allowBreak.value;
-        this.allowBreakAnyway = new ArrayList<>(Baritone.settings().allowBreakAnyway.value);
+        this.allowBreak = !forbidBreaking && Baritone.settings().allowBreak.value;
+        this.allowBreakAnyway = forbidBreaking ? new ArrayList<>() : new ArrayList<>(Baritone.settings().allowBreakAnyway.value);
         this.allowParkour = Baritone.settings().allowParkour.value;
         this.allowParkourPlace = Baritone.settings().allowParkourPlace.value;
         this.allowJumpAtBuildLimit = Baritone.settings().allowJumpAtBuildLimit.value;

@@ -23,6 +23,8 @@ import baritone.api.process.ICustomGoalProcess;
 import baritone.api.process.PathingCommand;
 import baritone.api.process.PathingCommandType;
 import baritone.utils.BaritoneProcessHelper;
+import baritone.utils.PathingCommandContext;
+import baritone.pathing.movement.CalculationContext;
 import net.minecraft.util.EnumChatFormatting;
 
 /**
@@ -48,6 +50,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
      * @see State
      */
     private State state;
+    private boolean forbidBreaking;
 
     public CustomGoalProcess(Baritone baritone) {
         super(baritone);
@@ -55,6 +58,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
 
     @Override
     public void setGoal(Goal goal) {
+        this.forbidBreaking = false;
         this.goal = goal;
         this.mostRecentGoal = goal;
         if (baritone.getElytraProcess().isActive()) {
@@ -70,6 +74,19 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
         if (this.state == State.EXECUTING) {
             this.state = State.PATH_REQUESTED;
         }
+    }
+
+    @Override
+    public void setGoalAndPathWithoutBreaking(Goal goal) {
+        setGoal(goal);
+        forbidBreaking = true;
+        path();
+    }
+
+    private PathingCommand pathCommand(PathingCommandType type) {
+        return forbidBreaking && goal != null
+                ? new PathingCommandContext(goal, type, new CalculationContext(baritone, true, true))
+                : new PathingCommand(goal, type);
     }
 
     @Override
@@ -99,7 +116,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
                 return new PathingCommand(this.goal, PathingCommandType.CANCEL_AND_SET_GOAL);
             case PATH_REQUESTED:
                 // return FORCE_REVALIDATE_GOAL_AND_PATH just once
-                PathingCommand ret = new PathingCommand(this.goal, PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
+                PathingCommand ret = pathCommand(PathingCommandType.FORCE_REVALIDATE_GOAL_AND_PATH);
                 this.state = State.EXECUTING;
                 return ret;
             case EXECUTING:
@@ -117,7 +134,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
                     }
                     return new PathingCommand(this.goal, PathingCommandType.CANCEL_AND_SET_GOAL);
                 }
-                return new PathingCommand(this.goal, PathingCommandType.SET_GOAL_AND_PATH);
+                return pathCommand(PathingCommandType.SET_GOAL_AND_PATH);
             default:
                 throw new IllegalStateException("Unexpected state " + this.state);
         }
@@ -127,6 +144,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
     public void onLostControl() {
         this.state = State.NONE;
         this.goal = null;
+        this.forbidBreaking = false;
     }
 
     @Override

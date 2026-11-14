@@ -52,4 +52,7 @@ public interface ICustomGoalProcess extends IBaritoneProcess {
         this.setGoal(goal);
         this.path();
     }
+
+    /** Path to a goal without planning block breaking, regardless of the global setting. */
+    void setGoalAndPathWithoutBreaking(Goal goal);
 }
