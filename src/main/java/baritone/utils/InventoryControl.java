@@ -5,6 +5,12 @@ import baritone.api.utils.IInventoryControl;
 import baritone.api.utils.IPlayerContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.client.gui.inventory.GuiContainer;
+import net.minecraft.inventory.Container;
+import net.minecraft.inventory.Slot;
+import net.minecraft.item.ItemStack;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class InventoryControl implements IInventoryControl {
     private final IPlayerContext ctx;
@@ -39,6 +45,42 @@ public final class InventoryControl implements IInventoryControl {
         if (player.inventory.getItemStack() != null) return Result.CURSOR_OCCUPIED;
         int containerSlot = inventorySlot < 9 ? inventorySlot + 36 : inventorySlot;
         ctx.playerController().windowClick(player.inventoryContainer.windowId, containerSlot, hotbarSlot, 2, player);
+        return Result.ATTEMPTED;
+    }
+
+    @Override
+    public ContainerSnapshot snapshotOpenContainer() {
+        Minecraft mc = ctx.minecraft();
+        if (!mc.func_152345_ab()) throw new IllegalStateException("Must run on the client thread");
+        EntityClientPlayerMP player = ctx.player();
+        if (player == null || ctx.world() == null || mc.playerController == null
+                || !(mc.currentScreen instanceof GuiContainer) || player.openContainer == null
+                || ((GuiContainer) mc.currentScreen).inventorySlots != player.openContainer) return null;
+        Container container = player.openContainer;
+        List<ItemStack> slots = new ArrayList<>(container.inventorySlots.size());
+        for (Object obj : container.inventorySlots) {
+            ItemStack stack = ((Slot) obj).getStack();
+            slots.add(stack == null ? null : stack.copy());
+        }
+        ItemStack cursor = player.inventory.getItemStack();
+        return new ContainerSnapshot(container, slots, cursor == null ? null : cursor.copy());
+    }
+
+    @Override
+    public Result clickContainerSlot(ContainerSnapshot snapshot, int slot, Click click, int button) {
+        Minecraft mc = ctx.minecraft();
+        if (!mc.func_152345_ab()) return Result.WRONG_THREAD;
+        EntityClientPlayerMP player = ctx.player();
+        if (player == null || ctx.world() == null || mc.playerController == null || player.sendQueue == null
+                || !(mc.currentScreen instanceof GuiContainer) || player.openContainer == null
+                || ((GuiContainer) mc.currentScreen).inventorySlots != player.openContainer) return Result.UNAVAILABLE;
+        Container container = player.openContainer;
+        if (snapshot == null || !snapshot.identifies(container)) return Result.STALE_WINDOW;
+        if (slot < 0 || slot >= container.inventorySlots.size() || click == null
+                || (click == Click.HOTBAR_SWAP && (button < 0 || button >= 9))) return Result.INVALID_SLOT;
+        int mode = click == Click.QUICK_MOVE ? 1 : click == Click.HOTBAR_SWAP ? 2 : 0;
+        int actualButton = click == Click.RIGHT ? 1 : click == Click.HOTBAR_SWAP ? button : 0;
+        ctx.playerController().windowClick(container.windowId, slot, actualButton, mode, player);
         return Result.ATTEMPTED;
     }
 }
