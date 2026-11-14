@@ -18,16 +18,12 @@
 package baritone.api.utils;
 
 import baritone.api.BaritoneAPI;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ContainerInput;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldSettings.GameType;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraftforge.common.util.ForgeDirection;
 
 /**
  * @author Brady
@@ -39,19 +35,19 @@ public interface IPlayerController {
 
     boolean hasBrokenBlock();
 
-    boolean onPlayerDamageBlock(BlockPos pos, Direction side);
+    void onPlayerDamageBlock(BetterBlockPos pos, ForgeDirection side);
 
     void resetBlockRemoving();
 
-    void windowClick(int windowId, int slotId, int mouseButton, ContainerInput type, Player player);
+    void windowClick(int windowId, int slotId, int mouseButton, int mode, EntityPlayer player);
 
     GameType getGameType();
 
-    InteractionResult processRightClickBlock(LocalPlayer player, Level world, InteractionHand hand, BlockHitResult result);
+    boolean processRightClickBlock(EntityClientPlayerMP player, World world, MovingObjectPosition result);
 
-    InteractionResult processRightClick(LocalPlayer player, Level world, InteractionHand hand);
+    boolean processRightClick(EntityClientPlayerMP player, World world);
 
-    boolean clickBlock(BlockPos loc, Direction face);
+    void clickBlock(BetterBlockPos loc, ForgeDirection face);
 
     void setHittingBlock(boolean hittingBlock);
 

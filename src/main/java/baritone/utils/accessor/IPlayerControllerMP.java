@@ -17,7 +17,8 @@
 
 package baritone.utils.accessor;
 
-import net.minecraft.core.BlockPos;
+import baritone.api.utils.BetterBlockPos;
+import net.minecraft.world.WorldSettings.GameType;
 
 public interface IPlayerControllerMP {
 
@@ -25,7 +26,17 @@ public interface IPlayerControllerMP {
 
     boolean isHittingBlock();
 
-    BlockPos getCurrentBlock();
+    int getCurrentBlockX();
+
+    int getCurrentBlockY();
+
+    int getCurrentBlockZ();
+
+    default BetterBlockPos getCurrentBlock() {
+        return new BetterBlockPos(getCurrentBlockX(), getCurrentBlockY(), getCurrentBlockZ());
+    }
+
+    GameType getCurrentGameType();
 
     void callSyncCurrentPlayItem();
 

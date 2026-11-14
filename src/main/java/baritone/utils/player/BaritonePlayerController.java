@@ -18,18 +18,15 @@
 package baritone.utils.player;
 
 import baritone.api.utils.IPlayerController;
+import baritone.api.utils.BetterBlockPos;
 import baritone.utils.accessor.IPlayerControllerMP;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.ContainerInput;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldSettings.GameType;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraftforge.common.util.ForgeDirection;
 
 
 /**
@@ -48,52 +45,52 @@ public final class BaritonePlayerController implements IPlayerController {
 
     @Override
     public void syncHeldItem() {
-        ((IPlayerControllerMP) mc.gameMode).callSyncCurrentPlayItem();
+        ((IPlayerControllerMP) mc.playerController).callSyncCurrentPlayItem();
     }
 
     @Override
     public boolean hasBrokenBlock() {
-        return !((IPlayerControllerMP) mc.gameMode).isHittingBlock();
+        return !((IPlayerControllerMP) mc.playerController).isHittingBlock();
     }
 
     @Override
-    public boolean onPlayerDamageBlock(BlockPos pos, Direction side) {
-        return mc.gameMode.continueDestroyBlock(pos, side);
+    public void onPlayerDamageBlock(BetterBlockPos pos, ForgeDirection side) {
+        mc.playerController.onPlayerDamageBlock(pos.x, pos.y, pos.z, side.ordinal());
     }
 
     @Override
     public void resetBlockRemoving() {
-        mc.gameMode.stopDestroyBlock();
+        mc.playerController.resetBlockRemoving();
     }
 
     @Override
-    public void windowClick(int windowId, int slotId, int mouseButton, ContainerInput type, Player player) {
-        mc.gameMode.handleContainerInput(windowId, slotId, mouseButton, type, player);
+    public void windowClick(int windowId, int slotId, int mouseButton, int mode, EntityPlayer player) {
+        mc.playerController.windowClick(windowId, slotId, mouseButton, mode, player);
     }
 
     @Override
     public GameType getGameType() {
-        return mc.gameMode.getPlayerMode();
+        return ((IPlayerControllerMP) mc.playerController).getCurrentGameType();
     }
 
     @Override
-    public InteractionResult processRightClickBlock(LocalPlayer player, Level world, InteractionHand hand, BlockHitResult result) {
-        // primaryplayercontroller is always in a ClientWorld so this is ok
-        return mc.gameMode.useItemOn(player, hand, result);
+    public boolean processRightClickBlock(EntityClientPlayerMP player, World world, MovingObjectPosition result) {
+        return mc.playerController.onPlayerRightClick(player, world, player.getCurrentEquippedItem(),
+                result.blockX, result.blockY, result.blockZ, result.sideHit, result.hitVec);
     }
 
     @Override
-    public InteractionResult processRightClick(LocalPlayer player, Level world, InteractionHand hand) {
-        return mc.gameMode.useItem(player, hand);
+    public boolean processRightClick(EntityClientPlayerMP player, World world) {
+        return mc.playerController.sendUseItem(player, world, player.getCurrentEquippedItem());
     }
 
     @Override
-    public boolean clickBlock(BlockPos loc, Direction face) {
-        return mc.gameMode.startDestroyBlock(loc, face);
+    public void clickBlock(BetterBlockPos loc, ForgeDirection face) {
+        mc.playerController.clickBlock(loc.x, loc.y, loc.z, face.ordinal());
     }
 
     @Override
     public void setHittingBlock(boolean hittingBlock) {
-        ((IPlayerControllerMP) mc.gameMode).setIsHittingBlock(hittingBlock);
+        ((IPlayerControllerMP) mc.playerController).setIsHittingBlock(hittingBlock);
     }
 }

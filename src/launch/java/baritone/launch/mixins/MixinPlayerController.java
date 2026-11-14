@@ -18,32 +18,44 @@
 package baritone.launch.mixins;
 
 import baritone.utils.accessor.IPlayerControllerMP;
-import net.minecraft.client.multiplayer.MultiPlayerGameMode;
-import net.minecraft.core.BlockPos;
+import net.minecraft.client.multiplayer.PlayerControllerMP;
+import net.minecraft.world.WorldSettings.GameType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(MultiPlayerGameMode.class)
+@Mixin(PlayerControllerMP.class)
 public abstract class MixinPlayerController implements IPlayerControllerMP {
 
-    @Accessor("isDestroying")
+    @Accessor("isHittingBlock")
     @Override
     public abstract void setIsHittingBlock(boolean isHittingBlock);
 
-    @Accessor("isDestroying")
+    @Accessor("isHittingBlock")
     @Override
     public abstract boolean isHittingBlock();
 
-    @Accessor("destroyBlockPos")
+    @Accessor("currentBlockX")
     @Override
-    public abstract BlockPos getCurrentBlock();
+    public abstract int getCurrentBlockX();
 
-    @Invoker("ensureHasSentCarriedItem")
+    @Accessor("currentBlockY")
+    @Override
+    public abstract int getCurrentBlockY();
+
+    @Accessor("currentblockZ")
+    @Override
+    public abstract int getCurrentBlockZ();
+
+    @Accessor("currentGameType")
+    @Override
+    public abstract GameType getCurrentGameType();
+
+    @Invoker("syncCurrentPlayItem")
     @Override
     public abstract void callSyncCurrentPlayItem();
 
-    @Accessor("destroyDelay")
+    @Accessor("blockHitDelay")
     @Override
     public abstract void setDestroyDelay(int destroyDelay);
 }

@@ -19,11 +19,7 @@ package baritone.utils;
 
 import baritone.Baritone;
 import baritone.api.utils.IPlayerContext;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.component.SwingAnimation;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
+import net.minecraft.util.MovingObjectPosition;
 
 public class BlockPlaceHelper {
     // base ticks between places caused by tick logic
@@ -41,19 +37,15 @@ public class BlockPlaceHelper {
             rightClickTimer--;
             return;
         }
-        HitResult mouseOver = ctx.objectMouseOver();
-        if (!rightClickRequested || ctx.player().isHandsBusy() || mouseOver == null || mouseOver.getType() != HitResult.Type.BLOCK) {
+        MovingObjectPosition mouseOver = ctx.objectMouseOver();
+        if (!rightClickRequested || ctx.player().isUsingItem() || mouseOver == null || mouseOver.typeOfHit != MovingObjectPosition.MovingObjectType.BLOCK) {
             return;
         }
         rightClickTimer = Baritone.settings().rightClickSpeed.value - BASE_PLACE_DELAY;
-        for (InteractionHand hand : InteractionHand.values()) {
-            if (ctx.playerController().processRightClickBlock(ctx.player(), ctx.world(), hand, (BlockHitResult) mouseOver) == InteractionResult.SUCCESS) {
-                ctx.player().swing(hand, SwingAnimation.DEFAULT, false);
-                return;
-            }
-            if (!ctx.player().getItemInHand(hand).isEmpty() && ctx.playerController().processRightClick(ctx.player(), ctx.world(), hand) == InteractionResult.SUCCESS) {
-                return;
-            }
+        if (ctx.playerController().processRightClickBlock(ctx.player(), ctx.world(), mouseOver)) {
+            ctx.player().swingItem();
+        } else if (ctx.player().getCurrentEquippedItem() != null) {
+            ctx.playerController().processRightClick(ctx.player(), ctx.world());
         }
     }
 }
