@@ -4,7 +4,6 @@
 
 package baritone.api.utils;
 
-import baritone.api.utils.accessor.IItemStack;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
@@ -17,7 +16,7 @@ import java.util.regex.Pattern;
 
 public final class BlockOptionalMeta {
     // Matches "stone", "minecraft:stone", "stone:1", "stone[1]", etc.
-    private static final Pattern PATTERN = Pattern.compile("^(?<id>[^:\\[\\]]+(?::[^:\\[\\]]+)?)(?:\\[(?<meta>\\d+)\\]|:(?<meta2>\\d+))?$");
+    private static final Pattern PATTERN = Pattern.compile("^(?<id>[^:\\[\\]]+(?::[^:\\[\\]]+)?)(?:\\[(?<meta>\\d+)\\])?$");
 
     private final Block block;
     private final Integer meta; // null if any metadata
@@ -67,14 +66,9 @@ public final class BlockOptionalMeta {
     }
 
     public BlockOptionalMeta(@Nonnull String selector) {
-        Matcher matcher = PATTERN.matcher(selector);
-        if (!matcher.find()) {
-            throw new IllegalArgumentException("Invalid block selector: " + selector);
-        }
-
-        this.block = BlockUtils.stringToBlockRequired(matcher.group("id"));
-        String metaStr = matcher.group("meta") != null ? matcher.group("meta") : matcher.group("meta2");
-        this.meta = metaStr != null ? Integer.parseInt(metaStr) : null;
+        String[] parts = parseSelector(selector);
+        this.block = BlockUtils.stringToBlockRequired(parts[0]);
+        this.meta = parts[1] != null ? Integer.parseInt(parts[1]) : null;
 
         Set<BlockState> states = new LinkedHashSet<>();
         if (meta != null) {
@@ -109,6 +103,24 @@ public final class BlockOptionalMeta {
         }
     }
 
+    static String[] parseSelector(String selector) {
+        String idSelector = selector;
+        String suffixMeta = null;
+        int lastColon = selector.lastIndexOf(':');
+        if (!selector.endsWith("]") && lastColon >= 0
+                && selector.substring(lastColon + 1).matches("\\d+")) {
+            suffixMeta = selector.substring(lastColon + 1);
+            idSelector = selector.substring(0, lastColon);
+        }
+        Matcher matcher = PATTERN.matcher(idSelector);
+        if (!matcher.find()) {
+            throw new IllegalArgumentException("Invalid block selector: " + selector);
+        }
+
+        String metaStr = matcher.group("meta") != null ? matcher.group("meta") : suffixMeta;
+        return new String[] { matcher.group("id"), metaStr };
+    }
+
     public Block getBlock() {
         return block;
     }
@@ -129,20 +141,19 @@ public final class BlockOptionalMeta {
         if (stack == null || stack.getItem() == null) {
             return false;
         }
-        if ((Object) stack instanceof IItemStack) {
-            int hash = ((IItemStack) (Object) stack).getBaritoneHash();
-            if (stackHashes.contains(hash)) {
+        Item blockItem = Item.getItemFromBlock(block);
+        if (blockItem == stack.getItem() && (meta == null || stack.getItemDamage() == meta)) {
+            return true;
+        }
+        int first = meta == null ? 0 : meta;
+        int last = meta == null ? 15 : meta;
+        for (int value = first; value <= last; value++) {
+            Item dropped = block.getItemDropped(value, new Random(0), 0);
+            if (dropped == stack.getItem() && stack.getItemDamage() == block.damageDropped(value)) {
                 return true;
             }
         }
-        Item blockItem = Item.getItemFromBlock(block);
-        if (blockItem == null || stack.getItem() != blockItem) {
-            return false;
-        }
-        if (meta == null) {
-            return true;
-        }
-        return stack.getItemDamage() == meta;
+        return false;
     }
 
     public BlockState getAnyBlockState() {

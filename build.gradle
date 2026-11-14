@@ -1,161 +1,70 @@
-/*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
- */
+plugins {
+    id 'java-library'
+    id 'com.gtnewhorizons.retrofuturagradle' version '1.4.9'
+}
 
-allprojects {
-    apply plugin: 'java'
-    apply plugin: "xyz.wagyourtail.unimined"
-    apply plugin: "maven-publish"
+group = 'baritone'
+version = '1.20.0-1.7.10-dev'
 
-    base {
-        archivesName = rootProject.archives_base_name
-    }
-
-    def vers = ""
-    try {
-        vers = 'git describe --always --tags --first-parent --dirty'.execute().text.trim()
-    } catch (Exception e) {
-        println "Version detection failed: " + e
-    }
-    if (!vers.startsWith("v")) {
-        println "using version number: " + rootProject.mod_version
-        version = rootProject.mod_version
-    } else {
-        version = vers.substring(1)
-        println "Detected version " + version
-    }
-    group = rootProject.maven_group
-
-    java {
-        sourceCompatibility = JavaVersion.toVersion(project.java_version)
-        toolchain {
-            languageVersion.set(JavaLanguageVersion.of(sourceCompatibility.majorVersion.toInteger()))
-        }
-    }
-
-    repositories {
-        maven {
-            url = "https://files.minecraftforge.net/maven/"
-        }
-        maven {
-            name = 'spongepowered-repo'
-            url = 'https://repo.spongepowered.org/repository/maven-public/'
-        }
-        maven {
-            name = 'fabric-maven'
-            url = 'https://maven.fabricmc.net/'
-        }
-        maven {
-            name = 'impactdevelopment-repo'
-            url = 'https://impactdevelopment.github.io/maven/'
-        }
-        maven {
-            name = "ldtteam"
-            url = "https://maven.parchmentmc.net/"
-        }
-        // for the newer version of launchwrapper
-        maven {
-            name = "multimc-maven"
-            url = "https://files.multimc.org/maven/"
-            metadataSources {
-                artifact()
-            }
-        }
-        mavenCentral()
-        maven {
-            name = 'babbaj-repo'
-            url = 'https://babbaj.github.io/maven/'
-        }
-    }
-
-    dependencies {
-        compileOnly "org.spongepowered:mixin:${project.mixin_version}"
-        compileOnly "org.ow2.asm:asm:${project.asm_version}"
-
-        implementation "dev.babbaj:nether-pathfinder:${project.nether_pathfinder_version}"
-
-        implementation 'com.google.code.findbugs:jsr305:3.0.2'
-    }
-
-    unimined.minecraft(sourceSets.main, true) {
-        version rootProject.minecraft_version
-
-        mappings {
-            mojmap()
-        }
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-        it.options.encoding = "UTF-8"
-
-        def targetVersion = project.java_version.toInteger()
-        if (JavaVersion.current().isJava9Compatible()) {
-            it.options.release = targetVersion
-        }
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
     }
 }
 
-unimined.minecraft {
-    runs.off = true
-    defaultRemapJar = false
+minecraft {
+    mcVersion.set('1.7.10')
 }
 
-base {
-    archivesName = archivesName.get() + "-common"
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    maven { url = 'https://babbaj.github.io/maven/' }
 }
 
 sourceSets {
     api {
-        compileClasspath += main.compileClasspath
-        runtimeClasspath += main.runtimeClasspath
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
     }
     main {
-        compileClasspath += api.output
-        runtimeClasspath += api.output
+        java.srcDirs = ['src/main/java', 'src/api/java', 'src/launch/java', 'src/schematica_api/java']
+        resources.srcDirs = ['src/main/resources', 'src/launch/resources']
     }
     test {
-        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
-        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
-    }
-    launch {
-        compileClasspath += main.compileClasspath + main.runtimeClasspath + main.output
-        runtimeClasspath += main.compileClasspath + main.runtimeClasspath + main.output
-    }
-    schematica_api {
-        compileClasspath += main.compileClasspath
-        runtimeClasspath += main.runtimeClasspath
-    }
-    main {
-        compileClasspath += schematica_api.output
-        runtimeClasspath += schematica_api.output
+        java.srcDirs = ['src/test/java']
+        resources.srcDirs = ['src/test/resources']
     }
 }
 
 dependencies {
+    compileOnly 'org.spongepowered:mixin:0.8.7'
+    compileOnly 'org.ow2.asm:asm:9.7'
+    compileOnly 'org.ow2.asm:asm-tree:9.7'
+    compileOnly 'org.ow2.asm:asm-commons:9.7'
+    implementation 'dev.babbaj:nether-pathfinder:1.6'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'it.unimi.dsi:fastutil:8.5.12'
+    implementation 'org.slf4j:slf4j-api:1.7.30'
+    testImplementation 'org.lwjgl.lwjgl:lwjgl:2.9.4-nightly-20150209'
+    testImplementation 'org.lwjgl.lwjgl:lwjgl_util:2.9.4-nightly-20150209'
     testImplementation 'junit:junit:4.13.2'
 }
 
-jar {
-    from sourceSets.main.output, sourceSets.launch.output, sourceSets.api.output
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
 
-javadoc {
-    options.addStringOption('Xwerror', '-quiet') // makes the build fail on travis when there is a javadoc error
-    options.linkSource true
-    options.encoding "UTF-8" // allow emoji in comments :^)
-    source = sourceSets.api.allJava
-    classpath += sourceSets.api.compileClasspath
+jar {
+    manifest {
+        attributes(
+                'MixinConfigs': 'mixins.baritone.json',
+                'MixinConnector': 'baritone.launch.BaritoneMixinConnector',
+                'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
+                'FMLCorePluginContainsFMLMod': 'true',
+                'ForceLoadAsMod': 'true',
+                'Implementation-Title': 'Baritone',
+                'Implementation-Version': project.version
+        )
+    }
 }

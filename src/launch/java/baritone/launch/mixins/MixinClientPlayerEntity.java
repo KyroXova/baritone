@@ -23,7 +23,6 @@ import baritone.api.event.events.ChatEvent;
 import baritone.api.event.events.PlayerUpdateEvent;
 import baritone.api.event.events.SprintStateEvent;
 import baritone.api.event.events.type.EventState;
-import baritone.behavior.LookBehavior;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -82,14 +81,4 @@ public class MixinClientPlayerEntity {
         }
     }
 
-    @Inject(
-            method = "updateRidden",
-            at = @At("HEAD")
-    )
-    private void updateRidden(CallbackInfo cb) {
-        IBaritone baritone = BaritoneAPI.getProvider().getBaritoneForPlayer((EntityClientPlayerMP) (Object) this);
-        if (baritone != null) {
-            ((LookBehavior) baritone.getLookBehavior()).pig();
-        }
-    }
 }

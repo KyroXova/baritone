@@ -4,7 +4,6 @@
 
 package baritone.api.utils;
 
-import baritone.api.utils.accessor.IItemStack;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;
@@ -18,22 +17,18 @@ import java.util.stream.Stream;
 public class BlockOptionalMetaLookup {
     private final ImmutableSet<Block> blockSet;
     private final ImmutableSet<BlockState> blockStateSet;
-    private final ImmutableSet<Integer> stackHashes;
     private final BlockOptionalMeta[] boms;
 
     public BlockOptionalMetaLookup(BlockOptionalMeta... boms) {
         this.boms = boms;
         Set<Block> blocks = new HashSet<>();
         Set<BlockState> blockStates = new HashSet<>();
-        Set<Integer> stacks = new HashSet<>();
         for (BlockOptionalMeta bom : boms) {
             blocks.add(bom.getBlock());
             blockStates.addAll(bom.getAllBlockStates());
-            stacks.addAll(bom.stackHashes());
         }
         this.blockSet = ImmutableSet.copyOf(blocks);
         this.blockStateSet = ImmutableSet.copyOf(blockStates);
-        this.stackHashes = ImmutableSet.copyOf(stacks);
     }
 
     public BlockOptionalMetaLookup(Block... blocks) {
@@ -64,12 +59,6 @@ public class BlockOptionalMetaLookup {
 
     public boolean has(ItemStack stack) {
         if (stack == null) return false;
-        if ((Object) stack instanceof IItemStack) {
-            int hash = ((IItemStack) (Object) stack).getBaritoneHash();
-            if (stackHashes.contains(hash)) {
-                return true;
-            }
-        }
         for (BlockOptionalMeta bom : boms) {
             if (bom.matches(stack)) return true;
         }

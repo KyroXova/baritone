@@ -1,5 +1,10 @@
 # Baritone
 
+This branch targets Minecraft Forge 1.7.10. Run `gradlew build` from the
+repository root with JDK 21 and a JDK 8 toolchain available. The 26.3 source
+snapshot is available in `ref/26.3` for comparison. This port is still in
+development; the produced jar has not yet been verified in a Forge client.
+
 <p align="center">
   <a href="https://github.com/cabaletta/baritone/releases/"><img src="https://img.shields.io/github/downloads/cabaletta/baritone/total.svg" alt="GitHub All Releases"/></a>
 </p>

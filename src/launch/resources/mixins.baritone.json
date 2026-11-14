@@ -17,6 +17,7 @@
     "MixinLivingEntity",
     "MixinMinecraft",
     "MixinNetworkManager",
+    "MixinPlayer",
     "MixinPlayerController",
     "MixinWorldRenderer"
   ],

@@ -6,6 +6,8 @@ package baritone.api.utils;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Item;
+import java.util.Random;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -76,5 +78,26 @@ public class BlockOptionalMetaTest {
 
         BlockOptionalMeta bomMeta = new BlockOptionalMeta(testBlock, 3);
         assertNotNull(bomMeta.stackHashes());
+    }
+
+    @Test
+    public void matchesDroppedItemInsteadOfOnlyBlockItem() {
+        final Item drop = new Item();
+        Block ore = new TestBlock() {
+            @Override
+            public Item getItemDropped(int metadata, Random random, int fortune) {
+                return drop;
+            }
+        };
+        BlockOptionalMetaLookup lookup = new BlockOptionalMetaLookup(new BlockOptionalMeta(ore));
+        assertTrue(lookup.has(new ItemStack(drop, 1, 0)));
+        assertFalse(lookup.has(new ItemStack(new Item(), 1, 0)));
+    }
+
+    @Test
+    public void parsesNamespacedAndUnqualifiedMetadataSelectors() {
+        assertArrayEquals(new String[] {"stone", "3"}, BlockOptionalMeta.parseSelector("stone:3"));
+        assertArrayEquals(new String[] {"minecraft:stone", "3"}, BlockOptionalMeta.parseSelector("minecraft:stone[3]"));
+        assertArrayEquals(new String[] {"minecraft:stone", "3"}, BlockOptionalMeta.parseSelector("minecraft:stone:3"));
     }
 }
