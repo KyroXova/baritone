@@ -20,6 +20,7 @@ package baritone.launch.mixins;
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
 import baritone.api.event.events.RenderEvent;
+import baritone.utils.WorldRenderOrigin;
 import net.minecraft.client.renderer.EntityRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,6 +35,7 @@ public class MixinWorldRenderer {
             at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;dispatchRenderLast(Lnet/minecraft/client/renderer/RenderGlobal;F)V", shift = At.Shift.AFTER, remap = false)
     )
     private void onRenderWorld(float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        WorldRenderOrigin.update(partialTicks);
         for (IBaritone ibaritone : BaritoneAPI.getProvider().getAllBaritones()) {
             ibaritone.getGameEventHandler().onRenderPass(new RenderEvent(partialTicks));
         }

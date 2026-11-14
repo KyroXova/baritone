@@ -11,7 +11,8 @@ import baritone.api.utils.IPlayerContext;
 import baritone.api.utils.interfaces.IGoalRenderPos;
 import baritone.behavior.PathingBehavior;
 import baritone.pathing.path.PathExecutor;
-import net.minecraft.client.renderer.entity.RenderManager;
+import baritone.pathing.calc.AbstractNodeCostSearch;
+import baritone.api.pathing.calc.IPath;
 import net.minecraft.util.AxisAlignedBB;
 import org.lwjgl.opengl.GL11;
 
@@ -19,21 +20,32 @@ import java.awt.Color;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 public final class PathRenderer implements IRenderer {
+
+    private static final long PREVIEW_INTERVAL_NANOS = 250_000_000L;
+    private static final Map<AbstractNodeCostSearch, SearchPreview> PREVIEWS = new WeakHashMap<>();
+
+    private static final class SearchPreview {
+        private long lastUpdate;
+        private IPath best;
+        private IPath recent;
+    }
 
     private PathRenderer() {}
 
     public static double posX() {
-        return RenderManager.renderPosX;
+        return WorldRenderOrigin.x();
     }
 
     public static double posY() {
-        return RenderManager.renderPosY;
+        return WorldRenderOrigin.y();
     }
 
     public static double posZ() {
-        return RenderManager.renderPosZ;
+        return WorldRenderOrigin.z();
     }
 
     public static void render(RenderEvent event, PathingBehavior behavior) {
@@ -71,14 +83,20 @@ public final class PathRenderer implements IRenderer {
         }
 
         behavior.getInProgress().ifPresent(currentlyRunning -> {
-            currentlyRunning.bestPathSoFar().ifPresent(p -> {
-                drawPath(p.positions(), 0, settings.colorBestPathSoFar.value, settings.fadePath.value, 10, 20);
-            });
-
-            currentlyRunning.pathToMostRecentNodeConsidered().ifPresent(mr -> {
-                drawPath(mr.positions(), 0, settings.colorMostRecentConsidered.value, settings.fadePath.value, 10, 20);
-                drawManySelectionBoxes(Collections.singletonList(mr.getDest()), settings.colorMostRecentConsidered.value);
-            });
+            SearchPreview preview = PREVIEWS.computeIfAbsent(currentlyRunning, ignored -> new SearchPreview());
+            long now = System.nanoTime();
+            if (preview.lastUpdate == 0 || now - preview.lastUpdate >= PREVIEW_INTERVAL_NANOS) {
+                preview.best = currentlyRunning.bestPathSoFar().orElse(null);
+                preview.recent = currentlyRunning.pathToMostRecentNodeConsidered().orElse(null);
+                preview.lastUpdate = now;
+            }
+            if (preview.best != null) {
+                drawPath(preview.best.positions(), 0, settings.colorBestPathSoFar.value, settings.fadePath.value, 10, 20);
+            }
+            if (preview.recent != null) {
+                drawPath(preview.recent.positions(), 0, settings.colorMostRecentConsidered.value, settings.fadePath.value, 10, 20);
+                drawManySelectionBoxes(Collections.singletonList(preview.recent.getDest()), settings.colorMostRecentConsidered.value);
+            }
         });
     }
 
@@ -184,10 +202,7 @@ public final class PathRenderer implements IRenderer {
         float lineWidth = settings.pathRenderLineWidthPixels.value;
         boolean ignoreDepth = settings.renderSelectionBoxesIgnoreDepth.value;
 
-        positions.forEach(pos -> {
-            AxisAlignedBB aabb = AxisAlignedBB.getBoundingBox(pos.x, pos.y, pos.z, pos.x + 1, pos.y + 1, pos.z + 1);
-            IRenderer.drawAABB(aabb, color, opacity, lineWidth, ignoreDepth);
-        });
+        IRenderer.drawBlockBoxes(positions, color, opacity, lineWidth, ignoreDepth);
     }
 
     public static void drawGoal(IPlayerContext ctx, Goal goal, float partialTicks, Color color) {
