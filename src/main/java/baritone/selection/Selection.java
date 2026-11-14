@@ -1,10 +1,13 @@
+/*
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
+ */
+
 package baritone.selection;
 
 import baritone.api.selection.ISelection;
 import baritone.api.utils.BetterBlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class Selection implements ISelection {
 
@@ -12,8 +15,8 @@ public class Selection implements ISelection {
     private final BetterBlockPos pos2;
     private final BetterBlockPos min;
     private final BetterBlockPos max;
-    private final Vec3i size;
-    private final AABB aabb;
+    private final BetterBlockPos size;
+    private final AxisAlignedBB aabb;
 
     public Selection(BetterBlockPos pos1, BetterBlockPos pos2) {
         this.pos1 = pos1;
@@ -31,13 +34,13 @@ public class Selection implements ISelection {
                 Math.max(pos1.z, pos2.z)
         );
 
-        this.size = new Vec3i(
+        this.size = new BetterBlockPos(
                 max.x - min.x + 1,
                 max.y - min.y + 1,
                 max.z - min.z + 1
         );
 
-        this.aabb = new AABB(min.x, min.y, min.z, max.x + 1, max.y + 1, max.z + 1);
+        this.aabb = AxisAlignedBB.getBoundingBox(min.x, min.y, min.z, max.x + 1, max.y + 1, max.z + 1);
     }
 
     @Override
@@ -61,12 +64,12 @@ public class Selection implements ISelection {
     }
 
     @Override
-    public Vec3i size() {
+    public BetterBlockPos size() {
         return size;
     }
 
     @Override
-    public AABB aabb() {
+    public AxisAlignedBB aabb() {
         return aabb;
     }
 
@@ -76,37 +79,39 @@ public class Selection implements ISelection {
     }
 
     @Override
+    public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof ISelection)) return false;
+        ISelection s = (ISelection) other;
+        return pos1.equals(s.pos1()) && pos2.equals(s.pos2());
+    }
+
+    @Override
     public String toString() {
         return String.format("Selection{pos1=%s,pos2=%s}", pos1, pos2);
     }
 
-    /**
-     * Since it might not be immediately obvious what this does, let me explain.
-     * <p>
-     * Let's say you specify Direction.UP, this functions returns if pos2 is the highest BlockPos.
-     * If you specify Direction.DOWN, it returns if pos2 is the lowest BlockPos.
-     *
-     * @param facing The direction to check.
-     * @return {@code true} if pos2 is further in that direction than pos1, {@code false} if it isn't, and something
-     * else if they're both at the same position on that axis (it really doesn't matter)
-     */
-    private boolean isPos2(Direction facing) {
-        boolean negative = facing.getAxisDirection().getStep() < 0;
-
-        switch (facing.getAxis()) {
-            case X:
-                return (pos2.x > pos1.x) ^ negative;
-            case Y:
-                return (pos2.y > pos1.y) ^ negative;
-            case Z:
-                return (pos2.z > pos1.z) ^ negative;
+    private boolean isPos2(ForgeDirection facing) {
+        switch (facing) {
+            case EAST:
+                return pos2.x > pos1.x;
+            case WEST:
+                return pos2.x < pos1.x;
+            case UP:
+                return pos2.y > pos1.y;
+            case DOWN:
+                return pos2.y < pos1.y;
+            case SOUTH:
+                return pos2.z > pos1.z;
+            case NORTH:
+                return pos2.z < pos1.z;
             default:
-                throw new IllegalStateException("Bad Direction.Axis");
+                throw new IllegalStateException("Bad direction " + facing);
         }
     }
 
     @Override
-    public ISelection expand(Direction direction, int blocks) {
+    public ISelection expand(ForgeDirection direction, int blocks) {
         if (isPos2(direction)) {
             return new Selection(pos1, pos2.relative(direction, blocks));
         } else {
@@ -115,7 +120,7 @@ public class Selection implements ISelection {
     }
 
     @Override
-    public ISelection contract(Direction direction, int blocks) {
+    public ISelection contract(ForgeDirection direction, int blocks) {
         if (isPos2(direction)) {
             return new Selection(pos1.relative(direction, blocks), pos2);
         } else {
@@ -124,7 +129,7 @@ public class Selection implements ISelection {
     }
 
     @Override
-    public ISelection shift(Direction direction, int blocks) {
+    public ISelection shift(ForgeDirection direction, int blocks) {
         return new Selection(pos1.relative(direction, blocks), pos2.relative(direction, blocks));
     }
 }

@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.utils.schematic;
@@ -20,9 +7,9 @@ package baritone.utils.schematic;
 import baritone.api.schematic.ISchematic;
 import baritone.api.schematic.MaskSchematic;
 import baritone.api.selection.ISelection;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import java.util.stream.Stream;
 
@@ -30,13 +17,13 @@ public class SelectionSchematic extends MaskSchematic {
 
     private final ISelection[] selections;
 
-    public SelectionSchematic(ISchematic schematic, Vec3i origin, ISelection[] selections) {
+    public SelectionSchematic(ISchematic schematic, BetterBlockPos origin, ISelection[] selections) {
         super(schematic);
         this.selections = Stream.of(selections).map(
                         sel -> sel
-                                .shift(Direction.WEST, origin.getX())
-                                .shift(Direction.DOWN, origin.getY())
-                                .shift(Direction.NORTH, origin.getZ()))
+                                .shift(ForgeDirection.WEST, origin.x)
+                                .shift(ForgeDirection.DOWN, origin.y)
+                                .shift(ForgeDirection.NORTH, origin.z))
                 .toArray(ISelection[]::new);
     }
 

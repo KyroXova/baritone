@@ -1,3 +1,7 @@
+/*
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
+ */
+
 package baritone.selection;
 
 import baritone.Baritone;
@@ -6,7 +10,7 @@ import baritone.api.selection.ISelectionManager;
 import baritone.api.utils.BetterBlockPos;
 import java.util.LinkedList;
 import java.util.ListIterator;
-import net.minecraft.core.Direction;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class SelectionManager implements ISelectionManager {
 
@@ -14,7 +18,7 @@ public class SelectionManager implements ISelectionManager {
     private ISelection[] selectionsArr = new ISelection[0];
 
     public SelectionManager(Baritone baritone) {
-        new SelectionRenderer(baritone, this);
+        // SelectionRenderer initialized when rendering is ported
     }
 
     private void resetSelectionsArr() {
@@ -68,7 +72,7 @@ public class SelectionManager implements ISelectionManager {
     }
 
     @Override
-    public synchronized ISelection expand(ISelection selection, Direction direction, int blocks) {
+    public synchronized ISelection expand(ISelection selection, ForgeDirection direction, int blocks) {
         for (ListIterator<ISelection> it = selections.listIterator(); it.hasNext(); ) {
             ISelection current = it.next();
 
@@ -84,7 +88,7 @@ public class SelectionManager implements ISelectionManager {
     }
 
     @Override
-    public synchronized ISelection contract(ISelection selection, Direction direction, int blocks) {
+    public synchronized ISelection contract(ISelection selection, ForgeDirection direction, int blocks) {
         for (ListIterator<ISelection> it = selections.listIterator(); it.hasNext(); ) {
             ISelection current = it.next();
 
@@ -100,7 +104,7 @@ public class SelectionManager implements ISelectionManager {
     }
 
     @Override
-    public synchronized ISelection shift(ISelection selection, Direction direction, int blocks) {
+    public synchronized ISelection shift(ISelection selection, ForgeDirection direction, int blocks) {
         for (ListIterator<ISelection> it = selections.listIterator(); it.hasNext(); ) {
             ISelection current = it.next();
 

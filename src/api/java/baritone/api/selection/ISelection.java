@@ -1,26 +1,12 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.api.selection;
 
 import baritone.api.utils.BetterBlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraftforge.common.util.ForgeDirection;
 
 /**
  * A selection is an immutable object representing the current selection. The selection is commonly used for certain
@@ -51,12 +37,12 @@ public interface ISelection {
     /**
      * @return The size of this ISelection.
      */
-    Vec3i size();
+    BetterBlockPos size();
 
     /**
-     * @return An {@link AABB} encompassing all blocks in this selection.
+     * @return An {@link AxisAlignedBB} encompassing all blocks in this selection.
      */
-    AABB aabb();
+    AxisAlignedBB aabb();
 
     /**
      * Returns a new {@link ISelection} expanded in the specified direction by the specified number of blocks.
@@ -65,7 +51,7 @@ public interface ISelection {
      * @param blocks    How many blocks to expand it.
      * @return A new selection, expanded as specified.
      */
-    ISelection expand(Direction direction, int blocks);
+    ISelection expand(ForgeDirection direction, int blocks);
 
     /**
      * Returns a new {@link ISelection} contracted in the specified direction by the specified number of blocks.
@@ -77,7 +63,7 @@ public interface ISelection {
      * @param blocks    How many blocks to contract it.
      * @return A new selection, contracted as specified.
      */
-    ISelection contract(Direction direction, int blocks);
+    ISelection contract(ForgeDirection direction, int blocks);
 
     /**
      * Returns a new {@link ISelection} shifted in the specified direction by the specified number of blocks. This moves
@@ -87,5 +73,5 @@ public interface ISelection {
      * @param blocks    How many blocks to shift it.
      * @return A new selection, shifted as specified.
      */
-    ISelection shift(Direction direction, int blocks);
+    ISelection shift(ForgeDirection direction, int blocks);
 }
