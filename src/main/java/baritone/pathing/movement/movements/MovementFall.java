@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.pathing.movement.movements;
@@ -20,6 +7,7 @@ package baritone.pathing.movement.movements;
 import baritone.api.IBaritone;
 import baritone.api.pathing.movement.MovementStatus;
 import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.RotationUtils;
 import baritone.api.utils.VecUtils;
@@ -29,29 +17,20 @@ import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.MovementState;
 import baritone.pathing.movement.MovementState.MovementTarget;
+import baritone.utils.BlockStateInterface;
 import baritone.utils.pathing.MutableMoveResult;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.LadderBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.WaterFluid;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Vec3;
+import net.minecraftforge.common.util.ForgeDirection;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 public class MovementFall extends Movement {
-
-    private static final ItemStack STACK_BUCKET_WATER = new ItemStack(Items.WATER_BUCKET);
-    private static final ItemStack STACK_BUCKET_EMPTY = new ItemStack(Items.BUCKET);
 
     public MovementFall(IBaritone baritone, BetterBlockPos src, BetterBlockPos dest) {
         super(baritone, src, dest, MovementFall.buildPositionsToBreak(src, dest));
@@ -83,6 +62,23 @@ public class MovementFall extends Movement {
         return MovementDescend.dynamicFallCost(context, src.x, src.y, src.z, dest.x, dest.z, 0, context.get(dest.x, src.y - 2, dest.z), result);
     }
 
+    private int findSlotMatchingItem(Item item) {
+        if (ctx.player() == null || ctx.player().inventory == null) {
+            return -1;
+        }
+        ItemStack[] inv = ctx.player().inventory.mainInventory;
+        for (int i = 0; i < inv.length; i++) {
+            if (inv[i] != null && inv[i].getItem() == item) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isHotbarSlot(int slot) {
+        return slot >= 0 && slot < 9;
+    }
+
     @Override
     public MovementState updateState(MovementState state) {
         super.updateState(state);
@@ -90,24 +86,21 @@ public class MovementFall extends Movement {
             return state;
         }
 
-        BlockPos playerFeet = ctx.playerFeet();
+        BetterBlockPos playerFeet = ctx.playerFeet();
         Rotation toDest = RotationUtils.calcRotationFromVec3d(ctx.playerHead(), VecUtils.getBlockPosCenter(dest), ctx.playerRotations());
         Rotation targetRotation = null;
-        BlockState destState = ctx.world().getBlockState(dest);
+        BlockState destState = BlockStateInterface.get(ctx, dest);
         Block destBlock = destState.getBlock();
 
-        if (ctx.world().getBlockState(dest.below()).is(Blocks.MAGMA_BLOCK) && MovementHelper.steppingOnBlocks(ctx).stream().allMatch(block -> MovementHelper.canWalkThrough(ctx, block))) {
-            state.setInput(Input.SNEAK, true);
-        }
-
-        boolean isWater = destState.getFluidState().getType() instanceof WaterFluid;
+        boolean isWater = destBlock == Blocks.water || destBlock == Blocks.flowing_water;
         if (!isWater && willPlaceBucket() && !playerFeet.equals(dest)) {
-            if (!Inventory.isHotbarSlot(ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_WATER)) || ctx.world().dimension() == Level.NETHER) {
+            int waterBucketSlot = findSlotMatchingItem(Items.water_bucket);
+            if (!isHotbarSlot(waterBucketSlot) || (ctx.world().provider != null && ctx.world().provider.isHellWorld)) {
                 return state.setStatus(MovementStatus.UNREACHABLE);
             }
 
-            if (ctx.player().position().y - dest.getY() < ctx.playerController().getBlockReachDistance() && !ctx.player().onGround()) {
-                ctx.player().getInventory().setSelectedSlot(ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_WATER));
+            if (ctx.player().posY - dest.y < ctx.playerController().getBlockReachDistance() && !ctx.player().onGround) {
+                ctx.player().inventory.currentItem = waterBucketSlot;
 
                 targetRotation = new Rotation(toDest.getYaw(), 90.0F);
 
@@ -121,54 +114,57 @@ public class MovementFall extends Movement {
         } else {
             state.setTarget(new MovementTarget(toDest, false));
         }
-        if (playerFeet.equals(dest) && (ctx.player().position().y - playerFeet.getY() < 0.094 || isWater)) { // 0.094 because lilypads
+        if (playerFeet.equals(dest) && (ctx.player().posY - playerFeet.y < 0.094 || isWater)) { // 0.094 because lilypads
             if (isWater) { // only match water, not flowing water (which we cannot pick up with a bucket)
-                if (Inventory.isHotbarSlot(ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_EMPTY))) {
-                    ctx.player().getInventory().setSelectedSlot(ctx.player().getInventory().findSlotMatchingItem(STACK_BUCKET_EMPTY));
-                    if (ctx.player().getDeltaMovement().y >= 0) {
+                int bucketSlot = findSlotMatchingItem(Items.bucket);
+                if (isHotbarSlot(bucketSlot)) {
+                    ctx.player().inventory.currentItem = bucketSlot;
+                    if (ctx.player().motionY >= 0) {
                         return state.setInput(Input.CLICK_RIGHT, true);
                     } else {
                         return state;
                     }
                 } else {
-                    if (ctx.player().getDeltaMovement().y >= 0) {
+                    if (ctx.player().motionY >= 0) {
                         return state.setStatus(MovementStatus.SUCCESS);
-                    } // don't else return state; we need to stay centered because this water might be flowing under the surface
+                    }
                 }
             } else {
                 return state.setStatus(MovementStatus.SUCCESS);
             }
         }
-        Vec3 destCenter = VecUtils.getBlockPosCenter(dest); // we are moving to the 0.5 center not the edge (like if we were falling on a ladder)
-        if (Math.abs(ctx.player().position().x + ctx.player().getDeltaMovement().x - destCenter.x) > 0.1 || Math.abs(ctx.player().position().z + ctx.player().getDeltaMovement().z - destCenter.z) > 0.1) {
-            if (!ctx.player().onGround() && Math.abs(ctx.player().getDeltaMovement().y) > 0.4) {
+        Vec3 destCenter = VecUtils.getBlockPosCenter(dest);
+        if (Math.abs(ctx.player().posX + ctx.player().motionX - destCenter.xCoord) > 0.1 || Math.abs(ctx.player().posZ + ctx.player().motionZ - destCenter.zCoord) > 0.1) {
+            if (!ctx.player().onGround && Math.abs(ctx.player().motionY) > 0.4) {
                 state.setInput(Input.SNEAK, true);
             }
             state.setInput(Input.MOVE_FORWARD, true);
         }
-        Vec3i avoid = Optional.ofNullable(avoid()).map(Direction::getUnitVec3i).orElse(null);
-        if (avoid == null) {
+        ForgeDirection avoidDir = avoid();
+        BetterBlockPos avoid;
+        if (avoidDir == null) {
             avoid = src.subtract(dest);
         } else {
-            double dist = Math.abs(avoid.getX() * (destCenter.x - avoid.getX() / 2.0 - ctx.player().position().x)) + Math.abs(avoid.getZ() * (destCenter.z - avoid.getZ() / 2.0 - ctx.player().position().z));
+            avoid = new BetterBlockPos(avoidDir.offsetX, avoidDir.offsetY, avoidDir.offsetZ);
+            double dist = Math.abs(avoid.x * (destCenter.xCoord - avoid.x / 2.0 - ctx.player().posX)) + Math.abs(avoid.z * (destCenter.zCoord - avoid.z / 2.0 - ctx.player().posZ));
             if (dist < 0.6) {
                 state.setInput(Input.MOVE_FORWARD, true);
-            } else if (!ctx.player().onGround()) {
+            } else if (!ctx.player().onGround) {
                 state.setInput(Input.SNEAK, false);
             }
         }
         if (targetRotation == null) {
-            Vec3 destCenterOffset = new Vec3(destCenter.x + 0.125 * avoid.getX(), destCenter.y, destCenter.z + 0.125 * avoid.getZ());
+            Vec3 destCenterOffset = Vec3.createVectorHelper(destCenter.xCoord + 0.125 * avoid.x, destCenter.yCoord, destCenter.zCoord + 0.125 * avoid.z);
             state.setTarget(new MovementTarget(RotationUtils.calcRotationFromVec3d(ctx.playerHead(), destCenterOffset, ctx.playerRotations()), false));
         }
         return state;
     }
 
-    private Direction avoid() {
+    private ForgeDirection avoid() {
         for (int i = 0; i < 15; i++) {
-            BlockState state = ctx.world().getBlockState(ctx.playerFeet().below(i));
-            if (state.getBlock() == Blocks.LADDER) {
-                return state.getValue(LadderBlock.FACING);
+            BlockState state = BlockStateInterface.get(ctx, ctx.playerFeet().below(i));
+            if (state.getBlock() == Blocks.ladder) {
+                return ForgeDirection.getOrientation(state.getMetadata());
             }
         }
         return null;
@@ -176,19 +172,17 @@ public class MovementFall extends Movement {
 
     @Override
     public boolean safeToCancel(MovementState state) {
-        // if we haven't started walking off the edge yet, or if we're in the process of breaking blocks before doing the fall
-        // then it's safe to cancel this
         return ctx.playerFeet().equals(src) || state.getStatus() != MovementStatus.RUNNING;
     }
 
     private static BetterBlockPos[] buildPositionsToBreak(BetterBlockPos src, BetterBlockPos dest) {
         BetterBlockPos[] toBreak;
-        int diffX = src.getX() - dest.getX();
-        int diffZ = src.getZ() - dest.getZ();
-        int diffY = Math.abs(src.getY() - dest.getY());
+        int diffX = src.x - dest.x;
+        int diffZ = src.z - dest.z;
+        int diffY = Math.abs(src.y - dest.y);
         toBreak = new BetterBlockPos[diffY + 2];
         for (int i = 0; i < toBreak.length; i++) {
-            toBreak[i] = new BetterBlockPos(src.getX() - diffX, src.getY() + 1 - i, src.getZ() - diffZ);
+            toBreak[i] = new BetterBlockPos(src.x - diffX, src.y + 1 - i, src.z - diffZ);
         }
         return toBreak;
     }
@@ -198,8 +192,6 @@ public class MovementFall extends Movement {
         if (state.getStatus() == MovementStatus.WAITING) {
             return true;
         }
-        // only break if one of the first three needs to be broken
-        // specifically ignore the last one which might be water
         for (int i = 0; i < 4 && i < positionsToBreak.length; i++) {
             if (!MovementHelper.canWalkThrough(ctx, positionsToBreak[i])) {
                 return super.prepared(state);
