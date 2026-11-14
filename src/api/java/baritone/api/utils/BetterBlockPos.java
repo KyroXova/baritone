@@ -159,6 +159,14 @@ public final class BetterBlockPos {
         return new BetterBlockPos(x, y + 1, z);
     }
 
+    public BetterBlockPos up() {
+        return above();
+    }
+
+    public BetterBlockPos up(int amt) {
+        return above(amt);
+    }
+
     public BetterBlockPos above(int amt) {
         // see comment in up()
         return amt == 0 ? this : new BetterBlockPos(x, y + amt, z);
@@ -167,6 +175,14 @@ public final class BetterBlockPos {
     public BetterBlockPos below() {
         // see comment in up()
         return new BetterBlockPos(x, y - 1, z);
+    }
+
+    public BetterBlockPos down() {
+        return below();
+    }
+
+    public BetterBlockPos down(int amt) {
+        return below(amt);
     }
 
     public BetterBlockPos below(int amt) {

@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.command.defaults;
@@ -39,17 +26,15 @@ import baritone.api.selection.ISelectionManager;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.BlockOptionalMeta;
 import baritone.api.utils.BlockOptionalMetaLookup;
+import baritone.api.utils.BlockState;
 import baritone.utils.BlockStateInterface;
 import baritone.utils.IRenderer;
 import baritone.utils.schematic.StaticSchematic;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraftforge.common.util.ForgeDirection;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.*;
 import java.util.List;
 import java.util.function.Function;
@@ -61,7 +46,7 @@ public class SelCommand extends Command {
     private ISelectionManager manager = baritone.getSelectionManager();
     private BetterBlockPos pos1 = null;
     private ISchematic clipboard = null;
-    private Vec3i clipboardOffset = null;
+    private BetterBlockPos clipboardOffset = null;
 
     public SelCommand(IBaritone baritone) {
         super(baritone, "sel", "selection", "s");
@@ -75,9 +60,7 @@ public class SelCommand extends Command {
                 float opacity = Baritone.settings().selectionOpacity.value;
                 float lineWidth = Baritone.settings().selectionLineWidth.value;
                 boolean ignoreDepth = Baritone.settings().renderSelectionIgnoreDepth.value;
-                BufferBuilder bufferBuilder = IRenderer.startLines(color, opacity);
-                IRenderer.emitAABB(bufferBuilder, event.getModelViewStack(), new AABB(pos1), lineWidth);
-                IRenderer.endLines(bufferBuilder, ignoreDepth);
+                IRenderer.drawAABB(AxisAlignedBB.getBoundingBox(pos1.x, pos1.y, pos1.z, pos1.x + 1, pos1.y + 1, pos1.z + 1), color, opacity, lineWidth, ignoreDepth);
             }
         });
     }
@@ -118,16 +101,16 @@ public class SelCommand extends Command {
                     throw new CommandInvalidStateException("Nothing to undo!");
                 } else {
                     pos1 = manager.removeSelection(selections[selections.length - 1]).pos1();
-                    logDirect("Undid pos2");
+                    logDirect("Undid last selection");
                 }
             }
         } else if (action.isFillAction()) {
             BlockOptionalMeta type = action == Action.CLEARAREA
-                    ? new BlockOptionalMeta(Blocks.AIR)
+                    ? new BlockOptionalMeta(Blocks.air)
                     : args.getDatatypeFor(ForBlockOptionalMeta.INSTANCE);
 
             final BlockOptionalMetaLookup replaces; // Action.REPLACE
-            final Direction.Axis alignment;         // Action.(H)CYLINDER
+            final Axis alignment;         // Action.(H)CYLINDER
             if (action == Action.REPLACE) {
                 args.requireMin(1);
                 List<BlockOptionalMeta> replacesList = new ArrayList<>();
@@ -140,7 +123,7 @@ public class SelCommand extends Command {
                 alignment = null;
             } else if (action == Action.CYLINDER || action == Action.HCYLINDER) {
                 args.requireMax(1);
-                alignment = args.hasAny() ? args.getDatatypeFor(ForAxis.INSTANCE) : Direction.Axis.Y;
+                alignment = args.hasAny() ? args.getDatatypeFor(ForAxis.INSTANCE) : Axis.Y;
                 replaces = null;
             } else {
                 args.requireMax(0);
@@ -162,10 +145,9 @@ public class SelCommand extends Command {
                 );
             }
             for (ISelection selection : selections) {
-                Vec3i size = selection.size();
+                BetterBlockPos size = selection.size();
                 BetterBlockPos min = selection.min();
 
-                // Java 8 so no switch expressions 😿
                 UnaryOperator<ISchematic> create = fill -> {
                     final int w = fill.widthX();
                     final int h = fill.heightY();
@@ -187,12 +169,11 @@ public class SelCommand extends Command {
                         case HCYLINDER:
                             return MaskSchematic.create(fill, new CylinderMask(w, h, l, false, alignment).compute());
                         default:
-                            // Silent fail
                             return fill;
                     }
                 };
 
-                ISchematic schematic = create.apply(new FillSchematic(size.getX(), size.getY(), size.getZ(), type));
+                ISchematic schematic = create.apply(new FillSchematic(size.x, size.y, size.z, type));
                 composite.put(schematic, min.x - origin.x, min.y - origin.y, min.z - origin.z);
             }
             baritone.getBuilderProcess().build("Fill", composite, origin);
@@ -217,12 +198,12 @@ public class SelCommand extends Command {
                 );
             }
             for (ISelection selection : selections) {
-                Vec3i size = selection.size();
+                BetterBlockPos size = selection.size();
                 BetterBlockPos min = selection.min();
-                BlockState[][][] blockstates = new BlockState[size.getX()][size.getZ()][size.getY()];
-                for (int x = 0; x < size.getX(); x++) {
-                    for (int y = 0; y < size.getY(); y++) {
-                        for (int z = 0; z < size.getZ(); z++) {
+                BlockState[][][] blockstates = new BlockState[size.x][size.z][size.y];
+                for (int x = 0; x < size.x; x++) {
+                    for (int y = 0; y < size.y; y++) {
+                        for (int z = 0; z < size.z; z++) {
                             blockstates[x][z][y] = bsi.get0(min.x + x, min.y + y, min.z + z);
                         }
                     }
@@ -240,7 +221,7 @@ public class SelCommand extends Command {
             if (clipboard == null) {
                 throw new CommandInvalidStateException("You need to copy a selection first");
             }
-            baritone.getBuilderProcess().build("Fill", clipboard, pos.offset(clipboardOffset));
+            baritone.getBuilderProcess().build("Fill", clipboard, pos.add(clipboardOffset));
             logDirect("Building now");
         } else if (action == Action.EXPAND || action == Action.CONTRACT || action == Action.SHIFT) {
             args.requireExactly(3);
@@ -248,7 +229,7 @@ public class SelCommand extends Command {
             if (transformTarget == null) {
                 throw new CommandInvalidStateException("Invalid transform type");
             }
-            Direction direction = args.getDatatypeFor(ForDirection.INSTANCE);
+            ForgeDirection direction = args.getDatatypeFor(ForDirection.INSTANCE);
             int blocks = args.getAs(Integer.class);
             ISelection[] selections = manager.getSelections();
             if (selections.length < 1) {

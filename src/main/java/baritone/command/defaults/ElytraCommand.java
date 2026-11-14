@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.command.defaults;
@@ -27,13 +14,12 @@ import baritone.api.command.helpers.TabCompleteHelper;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.process.ICustomGoalProcess;
 import baritone.api.process.IElytraProcess;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.multiplayer.ServerData;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.level.Level;
+import net.minecraft.event.ClickEvent;
+import net.minecraft.event.HoverEvent;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.IChatComponent;
 
 import java.util.Arrays;
 import java.util.List;
@@ -105,77 +91,85 @@ public class ElytraCommand extends Command {
         if (Baritone.settings().elytraPredictTerrain.value) {
             long seed = Baritone.settings().elytraNetherSeed.value;
             if (seed != NEW_2B2T_SEED && seed != OLD_2B2T_SEED) {
-                logDirect(Component.literal("It looks like you're on 2b2t, but elytraNetherSeed is incorrect.")); // match color
+                logDirect(new ChatComponentText("It looks like you're on 2b2t, but elytraNetherSeed is incorrect."));
                 logDirect(suggest2b2tSeeds());
             }
         }
     }
 
-    private Component suggest2b2tSeeds() {
-        MutableComponent clippy = Component.literal("");
-        clippy.append("Within a few hundred blocks of spawn/axis/highways/etc, the terrain is too fragmented to be predictable. Baritone Elytra will still work, just with backtracking. ");
-        clippy.append("However, once you get more than a few thousand blocks out, you should try ");
-        MutableComponent olderSeed = Component.literal("the older seed (click here)");
-        olderSeed.setStyle(olderSeed.getStyle().withUnderlined(true).withBold(true).withHoverEvent(new HoverEvent.ShowText(Component.literal(Baritone.settings().prefix.value + "set elytraNetherSeed " + OLD_2B2T_SEED))).withClickEvent(new ClickEvent.RunCommand(FORCE_COMMAND_PREFIX + "set elytraNetherSeed " + OLD_2B2T_SEED)));
-        clippy.append(olderSeed);
-        clippy.append(". Once you're further out into newer terrain generation (this includes everything up through 1.12), you should try ");
-        MutableComponent newerSeed = Component.literal("the newer seed (click here)");
-        newerSeed.setStyle(newerSeed.getStyle().withUnderlined(true).withBold(true).withHoverEvent(new HoverEvent.ShowText(Component.literal(Baritone.settings().prefix.value + "set elytraNetherSeed " + NEW_2B2T_SEED))).withClickEvent(new ClickEvent.RunCommand(FORCE_COMMAND_PREFIX + "set elytraNetherSeed " + NEW_2B2T_SEED)));
-        clippy.append(newerSeed);
-        clippy.append(". Once you get into 1.19 terrain, the terrain becomes unpredictable again, due to custom non-vanilla generation, and you should set #elytraPredictTerrain to false. ");
+    private IChatComponent suggest2b2tSeeds() {
+        ChatComponentText clippy = new ChatComponentText("");
+        clippy.appendText("Within a few hundred blocks of spawn/axis/highways/etc, the terrain is too fragmented to be predictable. Baritone Elytra will still work, just with backtracking. ");
+        clippy.appendText("However, once you get more than a few thousand blocks out, you should try ");
+        ChatComponentText olderSeed = new ChatComponentText("the older seed (click here)");
+        olderSeed.getChatStyle()
+                .setUnderlined(true)
+                .setBold(true)
+                .setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(Baritone.settings().prefix.value + "set elytraNetherSeed " + OLD_2B2T_SEED)))
+                .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, FORCE_COMMAND_PREFIX + "set elytraNetherSeed " + OLD_2B2T_SEED));
+        clippy.appendSibling(olderSeed);
+        clippy.appendText(". Once you're further out into newer terrain generation (this includes everything up through 1.12), you should try ");
+        ChatComponentText newerSeed = new ChatComponentText("the newer seed (click here)");
+        newerSeed.getChatStyle()
+                .setUnderlined(true)
+                .setBold(true)
+                .setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(Baritone.settings().prefix.value + "set elytraNetherSeed " + NEW_2B2T_SEED)))
+                .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, FORCE_COMMAND_PREFIX + "set elytraNetherSeed " + NEW_2B2T_SEED));
+        clippy.appendSibling(newerSeed);
+        clippy.appendText(". Once you get into 1.19 terrain, the terrain becomes unpredictable again, due to custom non-vanilla generation, and you should set #elytraPredictTerrain to false. ");
         return clippy;
     }
 
     private void gatekeep() {
-        MutableComponent gatekeep = Component.literal("");
-        gatekeep.append("To disable this message, enable the setting elytraTermsAccepted\n");
-        gatekeep.append("Baritone Elytra is an experimental feature. It is intended for long distance travel in the Nether but will also work in the Overworld, using fireworks for vanilla boost. It will not work with any other mods (\"hacks\") for non-vanilla boost. ");
-        MutableComponent gatekeep2 = Component.literal("If you want Baritone to attempt to take off from the ground for you, you can enable the elytraAutoJump setting (not advisable on laggy servers!). ");
-        gatekeep2.setStyle(gatekeep2.getStyle().withHoverEvent(new HoverEvent.ShowText(Component.literal(Baritone.settings().prefix.value + "set elytraAutoJump true"))));
-        gatekeep.append(gatekeep2);
-        MutableComponent gatekeep3 = Component.literal("If you want Baritone to go slower, enable the elytraConserveFireworks setting and/or decrease the elytraFireworkSpeed setting. ");
-        gatekeep3.setStyle(gatekeep3.getStyle().withHoverEvent(new HoverEvent.ShowText(Component.literal(Baritone.settings().prefix.value + "set elytraConserveFireworks true\n" + Baritone.settings().prefix.value + "set elytraFireworkSpeed 0.6\n(the 0.6 number is just an example, tweak to your liking)"))));
-        gatekeep.append(gatekeep3);
-        MutableComponent gatekeep4 = Component.literal("Baritone Elytra for use in the ");
-        MutableComponent red1 = Component.literal("Nether");
-        red1.setStyle(red1.getStyle().withColor(ChatFormatting.RED).withUnderlined(true).withBold(true));
-        gatekeep4.append(red1);
-        gatekeep4.append(", ");
-        MutableComponent red2 = Component.literal("wants to know the seed");
-        red2.setStyle(red2.getStyle().withColor(ChatFormatting.RED).withUnderlined(true).withBold(true));
-        gatekeep4.append(red2);
-        gatekeep4.append(" of the world you are in. If it doesn't have the correct seed, it will frequently backtrack. It uses the seed to generate terrain far beyond what you can see, since terrain obstacles in the Nether can be much larger than your render distance. ");
-        gatekeep.append(gatekeep4);
-        gatekeep.append("\n");
+        ChatComponentText gatekeep = new ChatComponentText("");
+        gatekeep.appendText("To disable this message, enable the setting elytraTermsAccepted\n");
+        gatekeep.appendText("Baritone Elytra is an experimental feature. It is intended for long distance travel in the Nether but will also work in the Overworld, using fireworks for vanilla boost. It will not work with any other mods (\"hacks\") for non-vanilla boost. ");
+        ChatComponentText gatekeep2 = new ChatComponentText("If you want Baritone to attempt to take off from the ground for you, you can enable the elytraAutoJump setting (not advisable on laggy servers!). ");
+        gatekeep2.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(Baritone.settings().prefix.value + "set elytraAutoJump true")));
+        gatekeep.appendSibling(gatekeep2);
+        ChatComponentText gatekeep3 = new ChatComponentText("If you want Baritone to go slower, enable the elytraConserveFireworks setting and/or decrease the elytraFireworkSpeed setting. ");
+        gatekeep3.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText(Baritone.settings().prefix.value + "set elytraConserveFireworks true\n" + Baritone.settings().prefix.value + "set elytraFireworkSpeed 0.6\n(the 0.6 number is just an example, tweak to your liking)")));
+        gatekeep.appendSibling(gatekeep3);
+        ChatComponentText gatekeep4 = new ChatComponentText("Baritone Elytra for use in the ");
+        ChatComponentText red1 = new ChatComponentText("Nether");
+        red1.getChatStyle().setColor(EnumChatFormatting.RED).setUnderlined(true).setBold(true);
+        gatekeep4.appendSibling(red1);
+        gatekeep4.appendText(", ");
+        ChatComponentText red2 = new ChatComponentText("wants to know the seed");
+        red2.getChatStyle().setColor(EnumChatFormatting.RED).setUnderlined(true).setBold(true);
+        gatekeep4.appendSibling(red2);
+        gatekeep4.appendText(" of the world you are in. If it doesn't have the correct seed, it will frequently backtrack. It uses the seed to generate terrain far beyond what you can see, since terrain obstacles in the Nether can be much larger than your render distance. ");
+        gatekeep.appendSibling(gatekeep4);
+        gatekeep.appendText("\n");
         if (detectOn2b2t()) {
-            MutableComponent gatekeep5 = Component.literal("It looks like you're on 2b2t. Terrain prediction can be used but new nether terrain can not be predicted on 2b2t. ");
-            gatekeep5.append(suggest2b2tSeeds());
+            ChatComponentText gatekeep5 = new ChatComponentText("It looks like you're on 2b2t. Terrain prediction can be used but new nether terrain can not be predicted on 2b2t. ");
+            gatekeep5.appendSibling(suggest2b2tSeeds());
             if (!Baritone.settings().elytraPredictTerrain.value) {
-                gatekeep5.append(Baritone.settings().prefix.value + "elytraPredictTerrain is currently disabled. ");
+                gatekeep5.appendText(Baritone.settings().prefix.value + "elytraPredictTerrain is currently disabled. ");
             } else {
                 if (Baritone.settings().elytraNetherSeed.value == NEW_2B2T_SEED) {
-                    gatekeep5.append("You are using the newer seed. ");
+                    gatekeep5.appendText("You are using the newer seed. ");
                 } else if (Baritone.settings().elytraNetherSeed.value == OLD_2B2T_SEED) {
-                    gatekeep5.append("You are using the older seed. ");
+                    gatekeep5.appendText("You are using the older seed. ");
                 } else {
-                    gatekeep5.append("Defaulting to the newer seed. ");
+                    gatekeep5.appendText("Defaulting to the newer seed. ");
                     Baritone.settings().elytraNetherSeed.value = NEW_2B2T_SEED;
                 }
             }
-            gatekeep.append(gatekeep5);
+            gatekeep.appendSibling(gatekeep5);
         } else {
             if (Baritone.settings().elytraNetherSeed.value == NEW_2B2T_SEED) {
-                MutableComponent gatekeep5 = Component.literal("Baritone doesn't know the seed of your world. Set it with: " + Baritone.settings().prefix.value + "set elytraNetherSeed seedgoeshere\n");
-                gatekeep5.append("For the time being, elytraPredictTerrain is defaulting to false since the seed is unknown.");
-                gatekeep.append(gatekeep5);
+                ChatComponentText gatekeep5 = new ChatComponentText("Baritone doesn't know the seed of your world. Set it with: " + Baritone.settings().prefix.value + "set elytraNetherSeed seedgoeshere\n");
+                gatekeep5.appendText("For the time being, elytraPredictTerrain is defaulting to false since the seed is unknown.");
+                gatekeep.appendSibling(gatekeep5);
                 Baritone.settings().elytraPredictTerrain.value = false;
             } else {
                 if (Baritone.settings().elytraPredictTerrain.value) {
-                    MutableComponent gatekeep5 = Component.literal("Baritone Elytra is predicting terrain assuming that " + Baritone.settings().elytraNetherSeed.value + " is the correct seed. Change that with " + Baritone.settings().prefix.value + "set elytraNetherSeed seedgoeshere, or disable it with " + Baritone.settings().prefix.value + "set elytraPredictTerrain false");
-                    gatekeep.append(gatekeep5);
+                    ChatComponentText gatekeep5 = new ChatComponentText("Baritone Elytra is predicting terrain assuming that " + Baritone.settings().elytraNetherSeed.value + " is the correct seed. Change that with " + Baritone.settings().prefix.value + "set elytraNetherSeed seedgoeshere, or disable it with " + Baritone.settings().prefix.value + "set elytraPredictTerrain false");
+                    gatekeep.appendSibling(gatekeep5);
                 } else {
-                    MutableComponent gatekeep5 = Component.literal("Baritone Elytra is not predicting terrain. If you don't know the seed, this is the correct thing to do. If you do know the seed, input it with " + Baritone.settings().prefix.value + "set elytraNetherSeed seedgoeshere, and then enable it with " + Baritone.settings().prefix.value + "set elytraPredictTerrain true");
-                    gatekeep.append(gatekeep5);
+                    ChatComponentText gatekeep5 = new ChatComponentText("Baritone Elytra is not predicting terrain. If you don't know the seed, this is the correct thing to do. If you do know the seed, input it with " + Baritone.settings().prefix.value + "set elytraNetherSeed seedgoeshere, and then enable it with " + Baritone.settings().prefix.value + "set elytraPredictTerrain true");
+                    gatekeep.appendSibling(gatekeep5);
                 }
             }
         }
@@ -183,8 +177,8 @@ public class ElytraCommand extends Command {
     }
 
     private boolean detectOn2b2t() {
-        ServerData data = ctx.minecraft().getCurrentServer();
-        return data != null && data.ip.toLowerCase().contains("2b2t.org");
+        ServerData data = ctx.minecraft().func_147104_D();
+        return data != null && data.serverIP != null && data.serverIP.toLowerCase().contains("2b2t.org");
     }
 
     private static final long OLD_2B2T_SEED = -4100785268875389365L;

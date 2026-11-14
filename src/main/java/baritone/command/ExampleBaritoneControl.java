@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.command;
@@ -34,13 +21,12 @@ import baritone.behavior.Behavior;
 import baritone.command.argument.ArgConsumer;
 import baritone.command.argument.CommandArguments;
 import baritone.command.manager.CommandManager;
-import com.mojang.blaze3d.Blaze3D;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.ClickEvent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.event.ClickEvent;
+import net.minecraft.event.HoverEvent;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.EnumChatFormatting;
 
+import java.awt.Desktop;
 import java.net.URI;
 import java.util.List;
 import java.util.Locale;
@@ -78,15 +64,13 @@ public class ExampleBaritoneControl extends Behavior implements Helper {
         if (settings.echoCommands.value) {
             String msg = command + rest;
             String toDisplay = settings.censorRanCommands.value ? command + " ..." : msg;
-            MutableComponent component = Component.literal(String.format("> %s", toDisplay));
-            component.setStyle(component.getStyle()
-                    .withColor(ChatFormatting.WHITE)
-                    .withHoverEvent(new HoverEvent.ShowText(
-                            Component.literal("Click to rerun command")
-                    ))
-                    .withClickEvent(new ClickEvent.RunCommand(
-                            FORCE_COMMAND_PREFIX + msg
-                    )));
+            ChatComponentText component = new ChatComponentText(String.format("> %s", toDisplay));
+            component.getChatStyle()
+                    .setColor(EnumChatFormatting.WHITE)
+                    .setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new ChatComponentText("Click to rerun command")))
+                    .setChatClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                            FORCE_COMMAND_PREFIX + msg));
             logDirect(component);
         }
     }
@@ -97,7 +81,9 @@ public class ExampleBaritoneControl extends Behavior implements Helper {
             return false;
         } else if (msg.trim().equalsIgnoreCase("orderpizza")) {
             try {
-                Blaze3D.openUri(URI.create("https://www.dominos.com/en/pages/order/"));
+                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                    Desktop.getDesktop().browse(URI.create("https://www.dominos.com/en/pages/order/"));
+                }
             } catch (Exception ignored) {}
             return false;
         }

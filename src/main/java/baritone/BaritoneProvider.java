@@ -46,7 +46,7 @@ public final class BaritoneProvider implements IBaritoneProvider {
         this.allView = Collections.unmodifiableList(this.all);
 
         // Setup chat control, just for the primary instance
-        final Baritone primary = (Baritone) this.createBaritone(Minecraft.getInstance());
+        final Baritone primary = (Baritone) this.createBaritone(Minecraft.getMinecraft());
         primary.registerBehavior(ExampleBaritoneControl::new);
     }
 

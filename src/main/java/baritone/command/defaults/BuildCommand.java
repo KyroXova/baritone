@@ -27,7 +27,6 @@ import baritone.api.command.exception.CommandException;
 import baritone.api.command.exception.CommandInvalidStateException;
 import baritone.api.utils.BetterBlockPos;
 import baritone.utils.schematic.SchematicSystem;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.util.Arrays;
@@ -41,14 +40,20 @@ public class BuildCommand extends Command {
 
     public BuildCommand(IBaritone baritone) {
         super(baritone, "build");
-        this.schematicsDir = new File(baritone.getPlayerContext().minecraft().gameDirectory, "schematics");
+        this.schematicsDir = new File(baritone.getPlayerContext().minecraft().mcDataDir, "schematics");
+    }
+
+    private static String getExtension(String path) {
+        int idx = path.lastIndexOf('.');
+        int sep = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return (idx > sep) ? path.substring(idx + 1) : "";
     }
 
     @Override
     public void execute(String label, IArgConsumer args) throws CommandException {
         final File file0 = args.getDatatypePost(RelativeFile.INSTANCE, schematicsDir).getAbsoluteFile();
         File file = file0;
-        if (FilenameUtils.getExtension(file.getAbsolutePath()).isEmpty()) {
+        if (getExtension(file.getAbsolutePath()).isEmpty()) {
             file = new File(file.getAbsolutePath() + "." + Baritone.settings().schematicFallbackExtension.value);
         }
         if (!file.exists()) {

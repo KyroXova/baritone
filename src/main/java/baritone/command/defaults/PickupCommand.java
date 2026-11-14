@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.command.defaults;
@@ -22,9 +9,7 @@ import baritone.api.command.Command;
 import baritone.api.command.argument.IArgConsumer;
 import baritone.api.command.datatypes.ItemById;
 import baritone.api.command.exception.CommandException;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.Item;
+import net.minecraft.item.Item;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -51,7 +36,9 @@ public class PickupCommand extends Command {
         } else {
             baritone.getFollowProcess().pickup(stack -> collecting.contains(stack.getItem()));
             logDirect("Picking up these items:");
-            collecting.stream().map(BuiltInRegistries.ITEM::getKey).map(Identifier::toString).forEach(this::logDirect);
+            collecting.stream()
+                    .map(Item.itemRegistry::getNameForObject)
+                    .forEach(this::logDirect);
         }
     }
 
@@ -68,15 +55,17 @@ public class PickupCommand extends Command {
 
     @Override
     public String getShortDesc() {
-        return "Pickup items";
+        return "Pick up items";
     }
 
     @Override
     public List<String> getLongDesc() {
         return Arrays.asList(
+                "The pickup command tells Baritone to automatically pick up items on the ground.",
+                "",
                 "Usage:",
-                "> pickup - Pickup anything",
-                "> pickup <item1> <item2> <...> - Pickup certain items"
+                "> pickup - Pick up any item.",
+                "> pickup <item1> <item2> <...> - Pick up certain items."
         );
     }
 }

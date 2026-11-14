@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.command.defaults;
@@ -24,10 +11,10 @@ import baritone.api.command.exception.CommandException;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.utils.BetterBlockPos;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-import net.minecraft.world.level.block.AirBlock;
 
 public class SurfaceCommand extends Command {
 
@@ -38,29 +25,30 @@ public class SurfaceCommand extends Command {
     @Override
     public void execute(String label, IArgConsumer args) throws CommandException {
         final BetterBlockPos playerPos = ctx.playerFeet();
-        final int surfaceLevel = ctx.world().getSeaLevel();
-        final int worldHeight = ctx.world().getHeight();
+        final int surfaceLevel = 63;
+        final int worldHeight = ctx.world().getActualHeight();
 
         // Ensure this command will not run if you are above the surface level and the block above you is air
         // As this would imply that your are already on the open surface
-        if (playerPos.getY() > surfaceLevel && ctx.world().getBlockState(playerPos.above()).getBlock() instanceof AirBlock) {
+        if (playerPos.y > surfaceLevel && ctx.world().isAirBlock(playerPos.x, playerPos.y + 1, playerPos.z)) {
             logDirect("Already at surface");
             return;
         }
 
-        final int startingYPos = Math.max(playerPos.getY(), surfaceLevel);
+        final int startingYPos = Math.max(playerPos.y, surfaceLevel);
 
         for (int currentIteratedY = startingYPos; currentIteratedY < worldHeight; currentIteratedY++) {
-            final BetterBlockPos newPos = new BetterBlockPos(playerPos.getX(), currentIteratedY, playerPos.getZ());
+            final BetterBlockPos newPos = new BetterBlockPos(playerPos.x, currentIteratedY, playerPos.z);
 
-            if (!(ctx.world().getBlockState(newPos).getBlock() instanceof AirBlock) && newPos.getY() > playerPos.getY()) {
-                Goal goal = new GoalBlock(newPos.above());
+            if (!ctx.world().isAirBlock(newPos.x, newPos.y, newPos.z) && newPos.y > playerPos.y) {
+                Goal goal = new GoalBlock(newPos.up());
                 logDirect(String.format("Going to: %s", goal.toString()));
                 baritone.getCustomGoalProcess().setGoalAndPath(goal);
                 return;
             }
         }
-        logDirect("No higher location found");
+
+        logDirect("Couldn't find the surface");
     }
 
     @Override
@@ -70,19 +58,16 @@ public class SurfaceCommand extends Command {
 
     @Override
     public String getShortDesc() {
-        return "Used to get out of caves, mines, ...";
+        return "Escape to the surface";
     }
 
     @Override
     public List<String> getLongDesc() {
         return Arrays.asList(
-                "The surface/top command tells Baritone to head towards the closest surface-like area.",
-                "",
-                "This can be the surface or the highest available air space, depending on circumstances.",
+                "The surface command tells Baritone to head towards the surface.",
                 "",
                 "Usage:",
-                "> surface - Used to get out of caves, mines, ...",
-                "> top - Used to get out of caves, mines, ..."
+                "> surface - Head towards the surface."
         );
     }
 }
