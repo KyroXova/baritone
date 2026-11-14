@@ -18,7 +18,6 @@
 package baritone.api.pathing.movement;
 
 import baritone.api.utils.BetterBlockPos;
-import net.minecraft.core.BlockPos;
 
 /**
  * @author Brady
@@ -51,5 +50,5 @@ public interface IMovement {
 
     BetterBlockPos getDest();
 
-    BlockPos getDirection();
+    BetterBlockPos getDirection();
 }

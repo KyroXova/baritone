@@ -23,17 +23,15 @@ import baritone.api.pathing.movement.IMovement;
 import baritone.api.pathing.movement.MovementStatus;
 import baritone.api.utils.*;
 import baritone.api.utils.input.Input;
-import baritone.behavior.PathingBehavior;
 import baritone.utils.BlockStateInterface;
 import java.util.*;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.world.entity.item.FallingBlockEntity;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.entity.item.EntityFallingBlock;
+import net.minecraft.util.AxisAlignedBB;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public abstract class Movement implements IMovement, MovementHelper {
 
-    public static final Direction[] HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST, Direction.DOWN};
+    public static final ForgeDirection[] HORIZONTALS_BUT_ALSO_DOWN_____SO_EVERY_DIRECTION_EXCEPT_UP = {ForgeDirection.NORTH, ForgeDirection.SOUTH, ForgeDirection.EAST, ForgeDirection.WEST, ForgeDirection.DOWN};
 
     protected final IBaritone baritone;
     protected final IPlayerContext ctx;
@@ -56,9 +54,9 @@ public abstract class Movement implements IMovement, MovementHelper {
 
     private Double cost;
 
-    public List<BlockPos> toBreakCached = null;
-    public List<BlockPos> toPlaceCached = null;
-    public List<BlockPos> toWalkIntoCached = null;
+    public List<BetterBlockPos> toBreakCached = null;
+    public List<BetterBlockPos> toPlaceCached = null;
+    public List<BetterBlockPos> toWalkIntoCached = null;
 
     private Set<BetterBlockPos> validPositionsCached = null;
 
@@ -110,7 +108,7 @@ public abstract class Movement implements IMovement, MovementHelper {
     }
 
     protected boolean playerInValidPosition() {
-        return getValidPositions().contains(ctx.playerFeet()) || getValidPositions().contains(((PathingBehavior) baritone.getPathingBehavior()).pathStart());
+        return getValidPositions().contains(ctx.playerFeet()) || getValidPositions().contains(baritone.getPathingBehavior().pathStart());
     }
 
     /**
@@ -121,12 +119,12 @@ public abstract class Movement implements IMovement, MovementHelper {
      */
     @Override
     public MovementStatus update() {
-        ctx.player().getAbilities().flying = false;
+        ctx.player().capabilities.isFlying = false;
         currentState = updateState(currentState);
-        if (MovementHelper.isLiquid(ctx, ctx.playerFeet()) && ctx.player().position().y < dest.y + 0.6) {
+        if (MovementHelper.isLiquid(ctx, ctx.playerFeet()) && ctx.player().posY < dest.y + 0.6) {
             currentState.setInput(Input.JUMP, true);
         }
-        if (ctx.player().isInWall()) {
+        if (ctx.player().isEntityInsideOpaqueBlock()) {
             ctx.getSelectedBlock().ifPresent(pos -> MovementHelper.switchToBestToolFor(ctx, BlockStateInterface.get(ctx, pos)));
             currentState.setInput(Input.CLICK_LEFT, true);
         }
@@ -156,7 +154,7 @@ public abstract class Movement implements IMovement, MovementHelper {
         }
         boolean somethingInTheWay = false;
         for (BetterBlockPos blockPos : positionsToBreak) {
-            if (!ctx.world().getEntitiesOfClass(FallingBlockEntity.class, new AABB(0, 0, 0, 1, 1.1, 1).move(blockPos)).isEmpty() && Baritone.settings().pauseMiningForFallingBlocks.value) {
+            if (!ctx.world().getEntitiesWithinAABB(EntityFallingBlock.class, AxisAlignedBB.getBoundingBox(blockPos.x, blockPos.y, blockPos.z, blockPos.x + 1.0, blockPos.y + 1.1, blockPos.z + 1.0)).isEmpty() && Baritone.settings().pauseMiningForFallingBlocks.value) {
                 return false;
             }
             if (!MovementHelper.canWalkThrough(ctx, blockPos)) { // can't break air, so don't try
@@ -237,7 +235,7 @@ public abstract class Movement implements IMovement, MovementHelper {
     }
 
     @Override
-    public BlockPos getDirection() {
+    public BetterBlockPos getDirection() {
         return getDest().subtract(getSrc());
     }
 
@@ -257,11 +255,11 @@ public abstract class Movement implements IMovement, MovementHelper {
         toWalkIntoCached = null;
     }
 
-    public List<BlockPos> toBreak(BlockStateInterface bsi) {
+    public List<BetterBlockPos> toBreak(BlockStateInterface bsi) {
         if (toBreakCached != null) {
             return toBreakCached;
         }
-        List<BlockPos> result = new ArrayList<>();
+        List<BetterBlockPos> result = new ArrayList<>();
         for (BetterBlockPos positionToBreak : positionsToBreak) {
             if (!MovementHelper.canWalkThrough(bsi, positionToBreak.x, positionToBreak.y, positionToBreak.z)) {
                 result.add(positionToBreak);
@@ -271,11 +269,11 @@ public abstract class Movement implements IMovement, MovementHelper {
         return result;
     }
 
-    public List<BlockPos> toPlace(BlockStateInterface bsi) {
+    public List<BetterBlockPos> toPlace(BlockStateInterface bsi) {
         if (toPlaceCached != null) {
             return toPlaceCached;
         }
-        List<BlockPos> result = new ArrayList<>();
+        List<BetterBlockPos> result = new ArrayList<>();
         if (positionToPlace != null && !MovementHelper.canWalkOn(bsi, positionToPlace.x, positionToPlace.y, positionToPlace.z)) {
             result.add(positionToPlace);
         }
@@ -283,14 +281,14 @@ public abstract class Movement implements IMovement, MovementHelper {
         return result;
     }
 
-    public List<BlockPos> toWalkInto(BlockStateInterface bsi) { // overridden by movementdiagonal
+    public List<BetterBlockPos> toWalkInto(BlockStateInterface bsi) { // overridden by movementdiagonal
         if (toWalkIntoCached == null) {
             toWalkIntoCached = new ArrayList<>();
         }
         return toWalkIntoCached;
     }
 
-    public BlockPos[] toBreakAll() {
+    public BetterBlockPos[] toBreakAll() {
         return positionsToBreak;
     }
 }

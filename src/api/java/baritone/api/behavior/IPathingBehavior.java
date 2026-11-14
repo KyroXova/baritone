@@ -21,6 +21,7 @@ import baritone.api.pathing.calc.IPath;
 import baritone.api.pathing.calc.IPathFinder;
 import baritone.api.pathing.goals.Goal;
 import baritone.api.pathing.path.IPathExecutor;
+import baritone.api.utils.BetterBlockPos;
 
 import java.util.Optional;
 
@@ -71,6 +72,10 @@ public interface IPathingBehavior extends IBehavior {
      * @return The current pathing goal
      */
     Goal getGoal();
+
+    default BetterBlockPos pathStart() {
+        return null;
+    }
 
     /**
      * @return Whether or not a path is currently being executed. This will be false if there's currently a pause.
