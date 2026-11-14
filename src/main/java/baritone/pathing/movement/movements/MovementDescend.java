@@ -210,7 +210,7 @@ public class MovementDescend extends Movement {
 
         BetterBlockPos playerFeet = ctx.playerFeet();
         BetterBlockPos fakeDest = new BetterBlockPos(dest.x * 2 - src.x, dest.y, dest.z * 2 - src.z);
-        if ((playerFeet.equals(dest) || playerFeet.equals(fakeDest)) && (MovementHelper.isLiquid(ctx, dest) || ctx.player().posY - dest.y < 0.5)) {
+        if ((playerFeet.equals(dest) || playerFeet.equals(fakeDest)) && (MovementHelper.isLiquid(ctx, dest) || ctx.player().boundingBox.minY - dest.y < 0.5)) {
             // Wait until we're actually on the ground before saying we're done because sometimes we continue to fall if the next action starts immediately
             return state.setStatus(MovementStatus.SUCCESS);
         }

@@ -171,7 +171,7 @@ public class MovementPillar extends Movement {
                 state.setInput(Input.MOVE_FORWARD, true);
                 state.setTarget(new MovementState.MovementTarget(rotation, true));
             } else if (flatMotion < 0.05) {
-                state.setInput(Input.JUMP, ctx.player().posY < dest.y);
+                state.setInput(Input.JUMP, ctx.player().boundingBox.minY < dest.y);
             }
 
             if (!blockIsThere) {
@@ -184,7 +184,7 @@ public class MovementPillar extends Movement {
                     state.setInput(Input.JUMP, false);
                     state.setInput(Input.CLICK_LEFT, true);
                     blockIsThere = false;
-                } else if (ctx.player().isSneaking() && (ctx.isLookingAt(src.below()) || ctx.isLookingAt(src)) && ctx.player().posY > dest.y + 0.1) {
+                } else if (ctx.player().isSneaking() && (ctx.isLookingAt(src.below()) || ctx.isLookingAt(src)) && ctx.player().boundingBox.minY > dest.y + 0.1) {
                     state.setInput(Input.CLICK_RIGHT, true);
                 }
             }

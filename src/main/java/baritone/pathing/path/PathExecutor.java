@@ -380,7 +380,7 @@ public class PathExecutor implements IPathExecutor, Helper {
             IMovement prev = path.movements().get(pathPosition - 1);
             if (prev instanceof MovementDescend && prev.getDirection().above().equals(current.getDirection().below())) {
                 BetterBlockPos center = current.getSrc().above();
-                if (ctx.player().posY >= center.y - 0.07) {
+                if (ctx.player().boundingBox.minY >= center.y - 0.07) {
                     behavior.baritone.getInputOverrideHandler().setInputForceState(Input.JUMP, false);
                     return true;
                 }

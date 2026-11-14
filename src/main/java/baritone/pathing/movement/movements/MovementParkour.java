@@ -245,11 +245,11 @@ public class MovementParkour extends Movement {
             if (d == Blocks.vine || d == Blocks.ladder) {
                 return state.setStatus(MovementStatus.SUCCESS);
             }
-            if (ctx.player().posY - ctx.playerFeet().y < 0.094) { // lilypads
+            if (ctx.player().boundingBox.minY - ctx.playerFeet().y < 0.094) { // lilypads
                 state.setStatus(MovementStatus.SUCCESS);
             }
         } else if (!ctx.playerFeet().equals(src)) {
-            if (ctx.playerFeet().equals(src.relative(direction)) || ctx.player().posY - src.y > 0.0001) {
+            if (ctx.playerFeet().equals(src.relative(direction)) || ctx.player().boundingBox.minY - src.y > 0.0001) {
                 if (Baritone.settings().allowPlace.value
                         && ((Baritone) baritone).getInventoryBehavior().hasGenericThrowaway()
                         && !MovementHelper.canWalkOn(ctx, dest.below())
