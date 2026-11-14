@@ -18,52 +18,55 @@
 package baritone.utils;
 
 import baritone.api.utils.input.Input;
-import net.minecraft.client.player.ClientInput;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.util.MovementInput;
+import java.util.function.Predicate;
 
-public class PlayerMovementInput extends ClientInput {
+public class PlayerMovementInput extends MovementInput {
 
-    private final InputOverrideHandler handler;
+    private final Predicate<Input> forced;
 
     PlayerMovementInput(InputOverrideHandler handler) {
-        this.handler = handler;
+        this(handler::isInputForcedDown);
+    }
+
+    PlayerMovementInput(Predicate<Input> forced) {
+        this.forced = forced;
     }
 
     @Override
-    public void tick() {
+    public void updatePlayerMoveState() {
         float leftImpulse = 0.0F;
         float forwardImpulse = 0.0F;
-        boolean jumping = handler.isInputForcedDown(Input.JUMP); // oppa gangnam style
+        boolean jumping = forced.test(Input.JUMP);
 
-        boolean up = handler.isInputForcedDown(Input.MOVE_FORWARD);
+        boolean up = forced.test(Input.MOVE_FORWARD);
         if (up) {
             forwardImpulse++;
         }
 
-        boolean down = handler.isInputForcedDown(Input.MOVE_BACK);
+        boolean down = forced.test(Input.MOVE_BACK);
         if (down) {
             forwardImpulse--;
         }
 
-        boolean left = handler.isInputForcedDown(Input.MOVE_LEFT);
+        boolean left = forced.test(Input.MOVE_LEFT);
         if (left) {
             leftImpulse++;
         }
 
-        boolean right = handler.isInputForcedDown(Input.MOVE_RIGHT);
+        boolean right = forced.test(Input.MOVE_RIGHT);
         if (right) {
             leftImpulse--;
         }
 
-        boolean sneaking = handler.isInputForcedDown(Input.SNEAK);
+        boolean sneaking = forced.test(Input.SNEAK);
         if (sneaking) {
             leftImpulse *= 0.3D;
             forwardImpulse *= 0.3D;
         }
-        this.moveVector = new Vec2(leftImpulse, forwardImpulse);
-
-        boolean sprinting = handler.isInputForcedDown(Input.SPRINT);
-
-        this.keyPresses = new net.minecraft.world.entity.player.Input(up, down, left, right, jumping, sneaking, sprinting);
+        this.moveStrafe = leftImpulse;
+        this.moveForward = forwardImpulse;
+        this.jump = jumping;
+        this.sneak = sneaking;
     }
 }
