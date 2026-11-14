@@ -91,6 +91,7 @@ public final class PathRenderer implements IRenderer {
             return;
         }
 
+        GL11.glPushAttrib(GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT | GL11.GL_LINE_BIT | GL11.GL_DEPTH_BUFFER_BIT);
         GL11.glPushMatrix();
         GL11.glEnable(GL11.GL_BLEND);
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -149,6 +150,7 @@ public final class PathRenderer implements IRenderer {
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glDisable(GL11.GL_BLEND);
         GL11.glPopMatrix();
+        GL11.glPopAttrib();
     }
 
     private static void emitPathLine(double x1, double y1, double z1, double x2, double y2, double z2, double offset) {

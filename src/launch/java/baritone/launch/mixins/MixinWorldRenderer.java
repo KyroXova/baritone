@@ -31,7 +31,7 @@ public class MixinWorldRenderer {
 
     @Inject(
             method = "renderWorld(FJ)V",
-            at = @At("RETURN")
+            at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;dispatchRenderLast(Lnet/minecraft/client/renderer/RenderGlobal;F)V", shift = At.Shift.AFTER, remap = false)
     )
     private void onRenderWorld(float partialTicks, long finishTimeNano, CallbackInfo ci) {
         for (IBaritone ibaritone : BaritoneAPI.getProvider().getAllBaritones()) {
