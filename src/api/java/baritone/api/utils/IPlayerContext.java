@@ -44,6 +44,13 @@ public interface IPlayerContext {
 
     World world();
 
+    default void disconnect() {
+        if (world() != null) {
+            world().sendQuittingDisconnectingPacket();
+            minecraft().loadWorld(null);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     default Iterable<Entity> entities() {
         return (Iterable<Entity>) world().loadedEntityList;

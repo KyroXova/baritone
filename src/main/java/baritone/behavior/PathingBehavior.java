@@ -36,9 +36,6 @@ import baritone.pathing.path.PathExecutor;
 import baritone.utils.PathRenderer;
 import baritone.utils.PathingCommandContext;
 import baritone.utils.pathing.Favoring;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -69,8 +66,6 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
     private final Object pathCalcLock = new Object();
 
     private final Object pathPlanLock = new Object();
-
-    private boolean lastAutoJump;
 
     private BetterBlockPos expectedSegmentStart;
 
@@ -160,10 +155,7 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
                     queuePathEvent(PathEvent.AT_GOAL);
                     next = null;
                     if (Baritone.settings().disconnectOnArrival.value) {
-                        if (ctx.world() instanceof ClientLevel) {
-                            ClientLevel clientLevel = (ClientLevel) ctx.world();
-                            clientLevel.disconnect(Component.literal("[Baritone] Arrived at goal!"));
-                        }
+                        ctx.disconnect();
                     }
                     return;
                 }
@@ -235,23 +227,6 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
                     queuePathEvent(PathEvent.NEXT_SEGMENT_CALC_STARTED);
                     findPathInNewThread(current.getPath().getDest(), false, context);
                 }
-            }
-        }
-    }
-
-    @Override
-    public void onPlayerUpdate(PlayerUpdateEvent event) {
-        if (current != null) {
-            switch (event.getState()) {
-                case PRE:
-                    lastAutoJump = ctx.minecraft().options.autoJump().get();
-                    ctx.minecraft().options.autoJump().set(false);
-                    break;
-                case POST:
-                    ctx.minecraft().options.autoJump().set(lastAutoJump);
-                    break;
-                default:
-                    break;
             }
         }
     }
@@ -411,10 +386,6 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
         resetEstimatedTicksToGoal(expectedSegmentStart);
     }
 
-    private void resetEstimatedTicksToGoal(BlockPos start) {
-        resetEstimatedTicksToGoal(new BetterBlockPos(start));
-    }
-
     private void resetEstimatedTicksToGoal(BetterBlockPos start) {
         ticksElapsedSoFar = 0;
         startPosition = start;
@@ -423,14 +394,14 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
     /**
      * See issue #209
      *
-     * @return The starting {@link BlockPos} for a new path
+     * @return The starting block position for a new path
      */
     public BetterBlockPos pathStart() { // TODO move to a helper or util class
         BetterBlockPos feet = ctx.playerFeet();
         if (!MovementHelper.canWalkOn(ctx, feet.below())) {
-            if (ctx.player().onGround()) {
-                double playerX = ctx.player().position().x;
-                double playerZ = ctx.player().position().z;
+            if (ctx.player().onGround) {
+                double playerX = ctx.player().posX;
+                double playerZ = ctx.player().posZ;
                 ArrayList<BetterBlockPos> closest = new ArrayList<>();
                 for (int dx = -1; dx <= 1; dx++) {
                     for (int dz = -1; dz <= 1; dz++) {
@@ -471,7 +442,7 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
      * @param start
      * @param talkAboutIt
      */
-    private void findPathInNewThread(final BlockPos start, final boolean talkAboutIt, CalculationContext context) {
+    private void findPathInNewThread(final BetterBlockPos start, final boolean talkAboutIt, CalculationContext context) {
         // this must be called with synchronization on pathCalcLock!
         // actually, we can check this, muahaha
         if (!Thread.holdsLock(pathCalcLock)) {
@@ -558,19 +529,18 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
         });
     }
 
-    private AbstractNodeCostSearch createPathfinder(BlockPos start, Goal goal, IPath previous, CalculationContext context) {
+    private AbstractNodeCostSearch createPathfinder(BetterBlockPos start, Goal goal, IPath previous, CalculationContext context) {
         Goal transformed = goal;
         if (Baritone.settings().simplifyUnloadedYCoord.value && goal instanceof IGoalRenderPos) {
-            BlockPos pos = ((IGoalRenderPos) goal).getGoalPos();
+            BetterBlockPos pos = ((IGoalRenderPos) goal).getGoalPos();
             if (!context.bsi.worldContainsLoadedChunk(pos.getX(), pos.getZ())) {
                 transformed = new GoalXZ(pos.getX(), pos.getZ());
             }
         }
         Favoring favoring = new Favoring(context.getBaritone().getPlayerContext(), previous, context);
         BetterBlockPos feet = ctx.playerFeet();
-        var realStart = new BetterBlockPos(start);
-        var sub = feet.subtract(realStart);
-        if (feet.getY() == realStart.getY() && Math.abs(sub.getX()) <= 1 && Math.abs(sub.getZ()) <= 1) {
+        BetterBlockPos realStart = new BetterBlockPos(start);
+        if (feet.y == realStart.y && Math.abs(feet.x - realStart.x) <= 1 && Math.abs(feet.z - realStart.z) <= 1) {
             realStart = feet;
         }
         return new AStarPathFinder(realStart, start.getX(), start.getY(), start.getZ(), transformed, favoring, context);
