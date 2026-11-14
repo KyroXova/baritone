@@ -50,3 +50,17 @@ dependencies {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
+
+jar {
+    manifest {
+        attributes(
+                'MixinConfigs': 'mixins.baritone.json',
+                'MixinConnector': 'baritone.launch.BaritoneMixinConnector',
+                'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
+                'FMLCorePluginContainsFMLMod': 'true',
+                'ForceLoadAsMod': 'true',
+                'Implementation-Title': 'Baritone',
+                'Implementation-Version': project.version
+        )
+    }
+}
