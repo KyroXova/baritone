@@ -17,25 +17,21 @@
 
 package baritone.api.utils;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.block.Block;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class BlockUtils {
 
-    private static transient Map<String, Block> resourceCache = new HashMap<>();
+    private static volatile Map<String, Block> resourceCache = new HashMap<>();
 
     public static String blockToString(Block block) {
-        Identifier loc = BuiltInRegistries.BLOCK.getKey(block);
-        String name = loc.getPath(); // normally, only write the part after the minecraft:
-        if (!loc.getNamespace().equals("minecraft")) {
-            // Baritone is running on top of forge with mods installed, perhaps?
-            name = loc.toString(); // include the namespace with the colon
+        String name = Block.blockRegistry.getNameForObject(block);
+        if (name == null) {
+            throw new IllegalArgumentException("Block is not registered");
         }
-        return name;
+        return name.startsWith("minecraft:") ? name.substring("minecraft:".length()) : name;
     }
 
     public static Block stringToBlockRequired(String name) {
@@ -57,7 +53,9 @@ public class BlockUtils {
         if (resourceCache.containsKey(name)) {
             return null; // cached as null
         }
-        block = BuiltInRegistries.BLOCK.getOptional(Identifier.tryParse(name.contains(":") ? name : "minecraft:" + name)).orElse(null);
+        String registryName = name.contains(":") ? name : "minecraft:" + name;
+        block = Block.blockRegistry.containsKey(registryName)
+                ? (Block) Block.blockRegistry.getObject(registryName) : null;
         Map<String, Block> copy = new HashMap<>(resourceCache); // read only copy is safe, wont throw concurrentmodification
         copy.put(name, block);
         resourceCache = copy;
