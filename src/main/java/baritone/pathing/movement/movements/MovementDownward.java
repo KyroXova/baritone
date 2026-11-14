@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.pathing.movement.movements;
@@ -20,15 +7,16 @@ package baritone.pathing.movement.movements;
 import baritone.api.IBaritone;
 import baritone.api.pathing.movement.MovementStatus;
 import baritone.api.utils.BetterBlockPos;
+import baritone.api.utils.BlockState;
 import baritone.pathing.movement.CalculationContext;
 import baritone.pathing.movement.Movement;
 import baritone.pathing.movement.MovementHelper;
 import baritone.pathing.movement.MovementState;
 import com.google.common.collect.ImmutableSet;
+import net.minecraft.block.Block;
+import net.minecraft.init.Blocks;
+
 import java.util.Set;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 
 public class MovementDownward extends Movement {
 
@@ -63,7 +51,7 @@ public class MovementDownward extends Movement {
         }
         BlockState down = context.get(x, y - 1, z);
         Block downBlock = down.getBlock();
-        if (downBlock == Blocks.LADDER || downBlock == Blocks.VINE) {
+        if (downBlock == Blocks.ladder || downBlock == Blocks.vine) {
             return LADDER_DOWN_ONE_COST;
         } else {
             // we're standing on it, while it might be block falling, it'll be air by the time we get here in the movement
@@ -83,8 +71,8 @@ public class MovementDownward extends Movement {
         } else if (!playerInValidPosition()) {
             return state.setStatus(MovementStatus.UNREACHABLE);
         }
-        double diffX = ctx.player().position().x - (dest.getX() + 0.5);
-        double diffZ = ctx.player().position().z - (dest.getZ() + 0.5);
+        double diffX = ctx.player().posX - (dest.x + 0.5);
+        double diffZ = ctx.player().posZ - (dest.z + 0.5);
         double ab = Math.sqrt(diffX * diffX + diffZ * diffZ);
 
         if (numTicks++ < 10 && ab < 0.2) {
