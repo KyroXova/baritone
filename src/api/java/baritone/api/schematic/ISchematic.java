@@ -18,8 +18,7 @@
 package baritone.api.schematic;
 
 import java.util.List;
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BlockState;
 
 /**
  * Basic representation of a schematic. Provides the dimensions and the desired state for a given position relative to
@@ -47,7 +46,7 @@ public interface ISchematic {
         return x >= 0 && x < widthX() && y >= 0 && y < heightY() && z >= 0 && z < lengthZ();
     }
 
-    default int size(Direction.Axis axis) {
+    default int size(Axis axis) {
         switch (axis) {
             case X:
                 return widthX();

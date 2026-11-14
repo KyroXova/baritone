@@ -22,6 +22,14 @@ public final class BlockState {
 
     public int getMetadata() { return metadata; }
 
+    public BlockState rotate(baritone.api.schematic.Rotation rotation) {
+        return this;
+    }
+
+    public BlockState mirror(baritone.api.schematic.Mirror mirror) {
+        return this;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) return true;

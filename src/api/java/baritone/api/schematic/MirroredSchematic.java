@@ -17,8 +17,7 @@
 
 package baritone.api.schematic;
 
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Mirror;
+import baritone.api.utils.BlockState;
 
 import java.util.List;
 import java.util.stream.Collectors;
