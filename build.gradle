@@ -22,6 +22,12 @@ repositories {
     maven { url = 'https://babbaj.github.io/maven/' }
 }
 
+configurations {
+    embedded {
+        transitive = false
+    }
+}
+
 sourceSets {
     api {
         java.setSrcDirs([])
@@ -38,6 +44,16 @@ sourceSets {
 }
 
 dependencies {
+    embedded 'org.spongepowered:mixin:0.8.7'
+    embedded 'it.unimi.dsi:fastutil:8.5.12'
+    embedded 'dev.babbaj:nether-pathfinder:1.6'
+    embedded 'com.google.code.findbugs:jsr305:3.0.2'
+    embedded 'org.slf4j:slf4j-api:1.7.30'
+    annotationProcessor 'org.spongepowered:mixin:0.8.7'
+    annotationProcessor 'org.ow2.asm:asm-tree:9.7'
+    annotationProcessor 'org.ow2.asm:asm-commons:9.7'
+    annotationProcessor 'com.google.guava:guava:21.0'
+    annotationProcessor 'com.google.code.gson:gson:2.8.9'
     compileOnly 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm:9.7'
     compileOnly 'org.ow2.asm:asm-tree:9.7'
@@ -55,7 +71,34 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+tasks.named('compileJava', JavaCompile) {
+    def srgTask = tasks.named('generateForgeSrgMappings')
+    dependsOn(srgTask)
+    outputs.files(layout.buildDirectory.file('generated/baritone.refmap.json'),
+            layout.buildDirectory.file('generated/baritone-mixins.srg'))
+    options.compilerArgs += [
+            "-AreobfSrgFile=${srgTask.get().mcpToSrg.get().asFile}",
+            "-AoutRefMapFile=${layout.buildDirectory.file('generated/baritone.refmap.json').get().asFile}",
+            "-AoutSrgFile=${layout.buildDirectory.file('generated/baritone-mixins.srg').get().asFile}"
+    ]
+}
+
+tasks.named('reobfJar') {
+    extraSrgFiles.from(layout.buildDirectory.file('generated/baritone-mixins.srg'))
+}
+
 jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.embedded.collect { zipTree(it) }
+    }
+    exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/MANIFEST.MF', 'module-info.class'
+    // Forge 1.7's class scanner cannot read the Java 9 ModLauncher integration.
+    exclude 'org/spongepowered/asm/launch/MixinLaunchPlugin.class'
+    exclude 'org/spongepowered/asm/launch/MixinTransformationService.class'
+    exclude 'org/spongepowered/asm/launch/platform/container/ContainerHandleModLauncherEx*.class'
+    exclude 'META-INF/services/cpw.mods.modlauncher.*'
+    from(layout.buildDirectory.file('generated/baritone.refmap.json'))
     manifest {
         attributes(
                 'MixinConfigs': 'mixins.baritone.json',
