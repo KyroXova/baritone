@@ -98,12 +98,12 @@ public final class BlockOptionalMeta {
         return meta;
     }
 
-    public boolean matches(@Nonnull Block block) {
-        return block == this.block;
+    public boolean matches(Block block) {
+        return block != null && block == this.block;
     }
 
-    public boolean matches(@Nonnull BlockState blockstate) {
-        return blockstate.getBlock() == this.block && (meta == null || meta == blockstate.getMetadata());
+    public boolean matches(BlockState blockstate) {
+        return blockstate != null && blockstate.getBlock() == this.block && (meta == null || meta == blockstate.getMetadata());
     }
 
     public boolean matches(ItemStack stack) {

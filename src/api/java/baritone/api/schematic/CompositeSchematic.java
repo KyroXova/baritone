@@ -19,7 +19,7 @@ package baritone.api.schematic;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BlockState;
 
 public class CompositeSchematic extends AbstractSchematic {
 

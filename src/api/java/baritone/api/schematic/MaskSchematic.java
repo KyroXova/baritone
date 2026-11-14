@@ -18,7 +18,7 @@
 package baritone.api.schematic;
 
 import baritone.api.schematic.mask.Mask;
-import net.minecraft.world.level.block.state.BlockState;
+import baritone.api.utils.BlockState;
 
 import java.util.List;
 
