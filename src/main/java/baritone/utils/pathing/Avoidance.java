@@ -1,18 +1,5 @@
 /*
- * This file is part of Baritone.
- *
- * Baritone is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Baritone is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Baritone.  If not, see <https://www.gnu.org/licenses/>.
+ * This file is part of Baritone, distributed under the LGPL-3.0-or-later.
  */
 
 package baritone.utils.pathing;
@@ -21,11 +8,10 @@ import baritone.Baritone;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.IPlayerContext;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Enderman;
-import net.minecraft.world.entity.monster.spider.Spider;
-import net.minecraft.world.entity.monster.zombie.ZombifiedPiglin;
+import net.minecraft.entity.monster.EntityEnderman;
+import net.minecraft.entity.monster.EntityMob;
+import net.minecraft.entity.monster.EntityPigZombie;
+import net.minecraft.entity.monster.EntitySpider;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,8 +26,8 @@ public class Avoidance {
     private final int radius;
     private final int radiusSq;
 
-    public Avoidance(BlockPos center, double coefficient, int radius) {
-        this(center.getX(), center.getY(), center.getZ(), coefficient, radius);
+    public Avoidance(BetterBlockPos center, double coefficient, int radius) {
+        this(center.x, center.y, center.z, coefficient, radius);
     }
 
     public Avoidance(int centerX, int centerY, int centerZ, double coefficient, int radius) {
@@ -67,17 +53,17 @@ public class Avoidance {
         List<Avoidance> res = new ArrayList<>();
         double mobSpawnerCoeff = Baritone.settings().mobSpawnerAvoidanceCoefficient.value;
         double mobCoeff = Baritone.settings().mobAvoidanceCoefficient.value;
-        if (mobSpawnerCoeff != 1.0D) {
+        if (mobSpawnerCoeff != 1.0D && ctx.worldData() != null && ctx.worldData().getCachedWorld() != null) {
             ctx.worldData().getCachedWorld().getLocationsOf("mob_spawner", 1, ctx.playerFeet().x, ctx.playerFeet().z, 2)
                     .forEach(mobspawner -> res.add(new Avoidance(mobspawner, mobSpawnerCoeff, Baritone.settings().mobSpawnerAvoidanceRadius.value)));
         }
         if (mobCoeff != 1.0D) {
             ctx.entitiesStream()
-                    .filter(entity -> entity instanceof Mob)
-                    .filter(entity -> (!(entity instanceof Spider)) || ctx.player().getLightLevelDependentMagicValue() < 0.5)
-                    .filter(entity -> !(entity instanceof ZombifiedPiglin) || ((ZombifiedPiglin) entity).getLastHurtByMob() != null)
-                    .filter(entity -> !(entity instanceof Enderman) || ((Enderman) entity).isCreepy())
-                    .forEach(entity -> res.add(new Avoidance(entity.blockPosition(), mobCoeff, Baritone.settings().mobAvoidanceRadius.value)));
+                    .filter(entity -> entity instanceof EntityMob)
+                    .filter(entity -> (!(entity instanceof EntitySpider)) || ctx.player().getBrightness(1.0F) < 0.5F)
+                    .filter(entity -> !(entity instanceof EntityPigZombie) || ((EntityPigZombie) entity).getAITarget() != null)
+                    .filter(entity -> !(entity instanceof EntityEnderman) || ((EntityEnderman) entity).isScreaming())
+                    .forEach(entity -> res.add(new Avoidance((int) Math.floor(entity.posX), (int) Math.floor(entity.posY), (int) Math.floor(entity.posZ), mobCoeff, Baritone.settings().mobAvoidanceRadius.value)));
         }
         return res;
     }
