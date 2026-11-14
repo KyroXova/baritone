@@ -19,8 +19,8 @@ package baritone.launch.mixins;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.event.events.RotationMoveEvent;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.client.entity.EntityClientPlayerMP;
+import net.minecraft.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -32,37 +32,36 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinEntity {
 
     @Shadow
-    private float yRot;
+    public float rotationYaw;
 
     @Shadow
-    private float xRot;
+    public float rotationPitch;
 
     @Unique
     private RotationMoveEvent motionUpdateRotationEvent;
 
     @Inject(
-            method = "moveRelative",
+            method = "moveFlying",
             at = @At("HEAD")
     )
-    private void moveRelativeHead(CallbackInfo info) {
-        // noinspection ConstantConditions
-        if (!LocalPlayer.class.isInstance(this) || BaritoneAPI.getProvider().getBaritoneForPlayer((LocalPlayer) (Object) this) == null) {
+    private void moveFlyingHead(float strafe, float forward, float friction, CallbackInfo info) {
+        if (!EntityClientPlayerMP.class.isInstance(this) || BaritoneAPI.getProvider().getBaritoneForPlayer((EntityClientPlayerMP) (Object) this) == null) {
             return;
         }
-        this.motionUpdateRotationEvent = new RotationMoveEvent(RotationMoveEvent.Type.MOTION_UPDATE, this.yRot, this.xRot);
-        BaritoneAPI.getProvider().getBaritoneForPlayer((LocalPlayer) (Object) this).getGameEventHandler().onPlayerRotationMove(motionUpdateRotationEvent);
-        this.yRot = this.motionUpdateRotationEvent.getYaw();
-        this.xRot = this.motionUpdateRotationEvent.getPitch();
+        this.motionUpdateRotationEvent = new RotationMoveEvent(RotationMoveEvent.Type.MOTION_UPDATE, this.rotationYaw, this.rotationPitch);
+        BaritoneAPI.getProvider().getBaritoneForPlayer((EntityClientPlayerMP) (Object) this).getGameEventHandler().onPlayerRotationMove(motionUpdateRotationEvent);
+        this.rotationYaw = this.motionUpdateRotationEvent.getYaw();
+        this.rotationPitch = this.motionUpdateRotationEvent.getPitch();
     }
 
     @Inject(
-            method = "moveRelative",
+            method = "moveFlying",
             at = @At("RETURN")
     )
-    private void moveRelativeReturn(CallbackInfo info) {
+    private void moveFlyingReturn(float strafe, float forward, float friction, CallbackInfo info) {
         if (this.motionUpdateRotationEvent != null) {
-            this.yRot = this.motionUpdateRotationEvent.getOriginal().getYaw();
-            this.xRot = this.motionUpdateRotationEvent.getOriginal().getPitch();
+            this.rotationYaw = this.motionUpdateRotationEvent.getOriginal().getYaw();
+            this.rotationPitch = this.motionUpdateRotationEvent.getOriginal().getPitch();
             this.motionUpdateRotationEvent = null;
         }
     }
