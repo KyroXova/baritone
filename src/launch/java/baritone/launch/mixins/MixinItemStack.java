@@ -49,7 +49,7 @@ public abstract class MixinItemStack implements IItemStack {
             at = @At("TAIL")
     )
     private void onItemDamageSet(int damage, CallbackInfo ci) {
-        recalculateHash();
+        baritoneHash = 0;
     }
 
     @Override
