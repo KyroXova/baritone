@@ -63,6 +63,7 @@ dependencies {
     testImplementation 'org.lwjgl.lwjgl:lwjgl:2.9.4-nightly-20150209'
     testImplementation 'org.lwjgl.lwjgl:lwjgl_util:2.9.4-nightly-20150209'
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.spongepowered:mixin:0.8.7'
 }
 
 tasks.withType(JavaCompile).configureEach {

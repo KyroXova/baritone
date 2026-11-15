@@ -18,14 +18,37 @@ import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.chunk.Chunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ChunkProviderClient.class)
 public abstract class MixinClientChunkProvider implements IClientChunkProvider {
     @Shadow private List<Chunk> chunkListing;
+    @Unique private final Map<Long, Chunk> baritone$loadedChunks = new HashMap<>();
+
+    @Inject(method = "loadChunk", at = @At("RETURN"))
+    private void baritone$trackLoadedChunk(int x, int z, CallbackInfoReturnable<Chunk> callback) {
+        Chunk chunk = callback.getReturnValue();
+        if (chunk != null && !chunk.isEmpty()) {
+            baritone$loadedChunks.put(ChunkCoordIntPair.chunkXZ2Int(x, z), chunk);
+        }
+    }
+
+    @Inject(method = "unloadChunk", at = @At("HEAD"))
+    private void baritone$trackUnloadedChunk(int x, int z, CallbackInfo callback) {
+        baritone$loadedChunks.remove(ChunkCoordIntPair.chunkXZ2Int(x, z));
+    }
 
     @Override
     public Map<Long, Chunk> snapshotLoadedChunks() {
         Map<Long, Chunk> result = new HashMap<>();
+        if (chunkListing == null) {
+            result.putAll(baritone$loadedChunks);
+            return Collections.unmodifiableMap(result);
+        }
         for (Chunk chunk : chunkListing) {
             result.put(ChunkCoordIntPair.chunkXZ2Int(chunk.xPosition, chunk.zPosition), chunk);
         }
