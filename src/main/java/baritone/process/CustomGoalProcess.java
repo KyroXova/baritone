@@ -61,6 +61,11 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
         this.forbidBreaking = false;
         this.goal = goal;
         this.mostRecentGoal = goal;
+        if (goal == null) {
+            this.state = State.NONE;
+            baritone.getPathingBehavior().cancelEverything();
+            return;
+        }
         if (baritone.getElytraProcess().isActive()) {
             try {
                 baritone.getElytraProcess().pathTo(goal);

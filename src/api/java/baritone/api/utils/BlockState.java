@@ -5,14 +5,14 @@ package baritone.api.utils;
 
 import net.minecraft.block.Block;
 
-/** A 1.7.10 block and its four-bit metadata. */
+/** A 1.7.10 block and its metadata. */
 public final class BlockState {
     private final Block block;
     private final int metadata;
 
     public BlockState(Block block, int metadata) {
-        if (block == null || metadata < 0 || metadata > 15) {
-            throw new IllegalArgumentException("Expected a block and metadata in the range 0..15");
+        if (block == null) {
+            throw new IllegalArgumentException("Expected a non-null block");
         }
         this.block = block;
         this.metadata = metadata;

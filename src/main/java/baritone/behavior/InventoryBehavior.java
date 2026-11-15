@@ -166,7 +166,7 @@ public final class InventoryBehavior extends Behavior implements Helper {
             ItemBlock item = (ItemBlock) stack.getItem();
             Block block = item.field_150939_a;
             int metadata = block.onBlockPlaced(ctx.world(), x, y, z, 1, 0.5F, 0.5F, 0.5F, item.getMetadata(stack.getItemDamage()));
-            return metadata >= 0 && metadata <= 15 && maybe.equals(new BlockState(block, metadata));
+            return metadata >= 0 && maybe.equals(new BlockState(block, metadata));
         })) {
             return true;
         }

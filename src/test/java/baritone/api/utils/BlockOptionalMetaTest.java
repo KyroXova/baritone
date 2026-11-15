@@ -71,6 +71,21 @@ public class BlockOptionalMetaTest {
     }
 
     @Test
+    public void testExtendedMetadataBlockState() {
+        Block testBlock = new TestBlock();
+        BlockState extended = new BlockState(testBlock, 146);
+        assertEquals(146, extended.getMetadata());
+        assertSame(testBlock, extended.getBlock());
+
+        BlockOptionalMeta bomSpecific = new BlockOptionalMeta(testBlock, 146);
+        assertTrue(bomSpecific.matches(extended));
+        assertFalse(bomSpecific.matches(new BlockState(testBlock, 0)));
+
+        BlockOptionalMeta bomAny = new BlockOptionalMeta(testBlock);
+        assertTrue(bomAny.matches(extended));
+    }
+
+    @Test
     public void testStackHashes() {
         Block testBlock = new TestBlock();
         BlockOptionalMeta bomAny = new BlockOptionalMeta(testBlock);

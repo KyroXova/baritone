@@ -48,12 +48,23 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
     public volatile Boolean renderPathOverride;
     public volatile Boolean renderBlocksOverride;
     public volatile Boolean renderGoalOverride;
+    public volatile Boolean chatOverride;
 
     @Override
     public void setNavigationRenderOverride(Boolean path, Boolean blocks, Boolean goal) {
         renderPathOverride = path;
         renderBlocksOverride = blocks;
         renderGoalOverride = goal;
+    }
+
+    @Override
+    public void setNavigationChatOverride(Boolean chat) {
+        this.chatOverride = chat;
+    }
+
+    @Override
+    public Boolean getNavigationChatOverride() {
+        return this.chatOverride;
     }
 
     private PathExecutor current;

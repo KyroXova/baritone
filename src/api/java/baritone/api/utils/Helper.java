@@ -18,6 +18,7 @@
 package baritone.api.utils;
 
 import baritone.api.BaritoneAPI;
+import baritone.api.IBaritone;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.EnumChatFormatting;
@@ -165,6 +166,16 @@ public interface Helper {
      * @param components The components to send
      */
     default void logDirect(boolean logAsToast, IChatComponent... components) {
+        try {
+            if (BaritoneAPI.getProvider() != null) {
+                IBaritone baritone = BaritoneAPI.getProvider().getPrimaryBaritone();
+                if (baritone != null && baritone.getPathingBehavior() != null) {
+                    if (Boolean.FALSE.equals(baritone.getPathingBehavior().getNavigationChatOverride())) {
+                        return;
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
         IChatComponent component = new ChatComponentText("");
         if (!logAsToast) {
             component.appendSibling(getPrefix());

@@ -34,6 +34,14 @@ public interface IPathingBehavior extends IBehavior {
     /** Temporarily override path, block and goal rendering; null restores each configured setting. */
     void setNavigationRenderOverride(Boolean path, Boolean blocks, Boolean goal);
 
+    /** Temporarily override chat message logging; true forces logging, false suppresses Baritone chat, null restores default. */
+    void setNavigationChatOverride(Boolean chat);
+
+    /** Returns the temporary chat override, or null if using default settings. */
+    default Boolean getNavigationChatOverride() {
+        return null;
+    }
+
     /**
      * Returns the estimated remaining ticks in the current pathing
      * segment. Given that the return type is an optional, {@link Optional#empty()}
