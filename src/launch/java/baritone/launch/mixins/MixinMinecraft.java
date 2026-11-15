@@ -22,6 +22,8 @@ import baritone.api.IBaritone;
 import baritone.api.event.events.TickEvent;
 import baritone.api.event.events.WorldEvent;
 import baritone.api.event.events.type.EventState;
+import baritone.api.utils.input.Input;
+import baritone.utils.BlockBreakHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -49,6 +51,14 @@ public class MixinMinecraft {
 
     @Unique
     private BiFunction<EventState, TickEvent.Type, TickEvent> tickProvider;
+
+    @Inject(method = "func_147115_a", at = @At("HEAD"), cancellable = true)
+    private void preserveAutomatedMining(boolean leftClick, CallbackInfo ci) {
+        if (thePlayer != null && theWorld != null && BlockBreakHelper.shouldPreventVanillaReset(leftClick,
+                BaritoneAPI.getProvider().getPrimaryBaritone().getInputOverrideHandler().isInputForcedDown(Input.CLICK_LEFT))) {
+            ci.cancel();
+        }
+    }
 
     @Inject(
             method = "runTick",

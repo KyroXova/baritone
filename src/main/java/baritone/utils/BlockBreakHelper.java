@@ -40,6 +40,10 @@ public final class BlockBreakHelper {
         this.ctx = ctx;
     }
 
+    public static boolean shouldPreventVanillaReset(boolean playerClick, boolean automatedClick) {
+        return automatedClick && !playerClick;
+    }
+
     public void stopBreakingBlock() {
         // The player controller will never be null, but the player can be
         if (ctx.player() != null && wasHitting) {
@@ -77,9 +81,8 @@ public final class BlockBreakHelper {
             }
             // if true, we're breaking a block. if false, we broke the block this tick
             wasHitting = !ctx.playerController().hasBrokenBlock();
-            // this value will be reset by the MC client handling mouse keys
-            // since we're not spoofing the click keybind to the client, the client will stop the break if isDestroyingBlock is true
-            // we store and restore this value on the next tick to determine if we're breaking a block
+            // Restore this state on the next tick; the Minecraft mixin preserves accumulated damage
+            // while automated mining is active without forcing the player's attack key.
             ctx.playerController().setHittingBlock(false);
         } else {
             wasHitting = false;
