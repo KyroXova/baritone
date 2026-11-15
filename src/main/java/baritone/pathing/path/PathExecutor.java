@@ -535,6 +535,12 @@ public class PathExecutor implements IPathExecutor, Helper {
         return pathPosition;
     }
 
+    @Override
+    public boolean isAimingForInteraction() {
+        return pathPosition >= 0 && pathPosition < path.movements().size()
+                && ((Movement) path.movements().get(pathPosition)).isAimingForInteraction();
+    }
+
     public PathExecutor trySplice(PathExecutor next) {
         if (next == null) {
             return cutIfTooLong();

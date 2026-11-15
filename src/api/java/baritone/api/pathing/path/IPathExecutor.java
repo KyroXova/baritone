@@ -28,4 +28,9 @@ public interface IPathExecutor {
     IPath getPath();
 
     int getPosition();
+
+    /** Whether the current movement is aiming at a block for an interaction. */
+    default boolean isAimingForInteraction() {
+        return false;
+    }
 }

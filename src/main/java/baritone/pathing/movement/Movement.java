@@ -148,6 +148,10 @@ public abstract class Movement implements IMovement, MovementHelper {
         return currentState.getStatus();
     }
 
+    public boolean isAimingForInteraction() {
+        return currentState.getTarget().hasToForceRotations();
+    }
+
     protected boolean prepared(MovementState state) {
         if (state.getStatus() == MovementStatus.WAITING) {
             return true;
