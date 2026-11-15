@@ -23,6 +23,9 @@ import baritone.api.utils.BetterBlockPos;
 import baritone.utils.accessor.IPlayerControllerMP;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
+import net.minecraft.world.World;
 
 /**
  * @author Brady
@@ -35,6 +38,11 @@ public final class BlockBreakHelper {
     private final IPlayerContext ctx;
     private boolean wasHitting;
     private int breakDelayTimer = 0;
+    private BetterBlockPos lockedTarget;
+    private Block lockedBlock;
+    private int lockedMetadata;
+    private World lockedWorld;
+    private long lockedDeadline;
 
     BlockBreakHelper(IPlayerContext ctx) {
         this.ctx = ctx;
@@ -44,16 +52,57 @@ public final class BlockBreakHelper {
         return automatedClick && !playerClick;
     }
 
+    public boolean lockTarget(BetterBlockPos pos) {
+        World world = ctx.world();
+        if (world == null || pos == null || world.getBlock(pos.x, pos.y, pos.z).getMaterial() == Material.air) return false;
+        if (lockedTarget != null && !lockedTarget.equals(pos)) clearTarget();
+        lockedTarget = pos;
+        lockedWorld = world;
+        lockedBlock = world.getBlock(pos.x, pos.y, pos.z);
+        lockedMetadata = world.getBlockMetadata(pos.x, pos.y, pos.z);
+        lockedDeadline = System.nanoTime() + 1_500_000_000L;
+        return true;
+    }
+
+    public boolean hasTarget() { return lockedTarget != null; }
+
+    static boolean matchesLockedTarget(BetterBlockPos target, MovingObjectPosition hit) {
+        return target != null && hit != null && hit.typeOfHit == MovingObjectPosition.MovingObjectType.BLOCK
+                && hit.blockX == target.x && hit.blockY == target.y && hit.blockZ == target.z;
+    }
+
+    public void clearTarget() {
+        if (lockedTarget != null) stopBreakingBlock();
+        lockedTarget = null;
+        lockedWorld = null;
+        lockedBlock = null;
+        lockedDeadline = 0;
+    }
+
     public void stopBreakingBlock() {
         // The player controller will never be null, but the player can be
         if (ctx.player() != null && wasHitting) {
-            ctx.playerController().setHittingBlock(false);
+            ctx.playerController().setHittingBlock(true);
             ctx.playerController().resetBlockRemoving();
             wasHitting = false;
         }
     }
 
     public void tick(boolean isLeftClick) {
+        if (lockedTarget != null) {
+            if (System.nanoTime() > lockedDeadline || ctx.minecraft().currentScreen != null
+                    || ctx.world() != lockedWorld || ctx.world().getBlock(lockedTarget.x, lockedTarget.y, lockedTarget.z) != lockedBlock
+                    || ctx.world().getBlockMetadata(lockedTarget.x, lockedTarget.y, lockedTarget.z) != lockedMetadata) {
+                clearTarget();
+                return;
+            }
+            MovingObjectPosition hit = ctx.objectMouseOver();
+            if (!matchesLockedTarget(lockedTarget, hit)) {
+                stopBreakingBlock();
+                return;
+            }
+            isLeftClick = true;
+        }
         if (breakDelayTimer > 0) {
             breakDelayTimer--;
             return;

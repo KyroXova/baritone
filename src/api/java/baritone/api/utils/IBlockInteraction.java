@@ -25,4 +25,13 @@ public interface IBlockInteraction {
 
     /** Start a single left click against a block; repeated calls are not a mining operation. */
     Result attackBlock(BetterBlockPos pos, ForgeDirection face, Vec3 hit, boolean requireLineOfSight);
+
+    /** Begin a target-locked continuous break; callers must stop it when finished. */
+    default Result startBreaking(BetterBlockPos pos, ForgeDirection face, Vec3 hit) {
+        return Result.UNAVAILABLE;
+    }
+
+    default void stopBreaking() {}
+
+    default boolean isBreaking() { return false; }
 }

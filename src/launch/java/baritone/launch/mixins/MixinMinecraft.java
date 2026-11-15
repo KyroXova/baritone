@@ -55,7 +55,8 @@ public class MixinMinecraft {
     @Inject(method = "func_147115_a", at = @At("HEAD"), cancellable = true)
     private void preserveAutomatedMining(boolean leftClick, CallbackInfo ci) {
         if (thePlayer != null && theWorld != null && BlockBreakHelper.shouldPreventVanillaReset(leftClick,
-                BaritoneAPI.getProvider().getPrimaryBaritone().getInputOverrideHandler().isInputForcedDown(Input.CLICK_LEFT))) {
+                BaritoneAPI.getProvider().getPrimaryBaritone().getInputOverrideHandler().isInputForcedDown(Input.CLICK_LEFT)
+                        || BaritoneAPI.getProvider().getPrimaryBaritone().getBlockInteraction().isBreaking())) {
             ci.cancel();
         }
     }

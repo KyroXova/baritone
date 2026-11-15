@@ -5,6 +5,8 @@ import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.IBlockInteraction;
 import baritone.api.utils.IPlayerContext;
 import baritone.api.utils.RayTraceUtils;
+import baritone.Baritone;
+import baritone.api.utils.input.Input;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityClientPlayerMP;
 import net.minecraft.network.play.client.C0BPacketEntityAction;
@@ -15,9 +17,11 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 public final class BlockInteraction implements IBlockInteraction {
     private final IPlayerContext ctx;
+    private final Baritone baritone;
 
-    public BlockInteraction(IPlayerContext ctx) {
+    public BlockInteraction(IPlayerContext ctx, Baritone baritone) {
         this.ctx = ctx;
+        this.baritone = baritone;
     }
 
     private Result validate(BetterBlockPos pos, ForgeDirection face, Vec3 hit, boolean sneak, boolean requireLineOfSight) {
@@ -82,5 +86,24 @@ public final class BlockInteraction implements IBlockInteraction {
         ctx.playerController().clickBlock(pos, face);
         ctx.player().swingItem();
         return Result.ATTEMPTED;
+    }
+
+    @Override
+    public Result startBreaking(BetterBlockPos pos, ForgeDirection face, Vec3 hit) {
+        Result result = validate(pos, face, hit, false, true);
+        if (result != Result.ATTEMPTED) return result;
+        if (baritone.getPathingBehavior().isPathing() || baritone.getPathingBehavior().getInProgress().isPresent()
+                || baritone.getInputOverrideHandler().isInputForcedDown(Input.CLICK_LEFT)) return Result.UNAVAILABLE;
+        return baritone.getInputOverrideHandler().getBlockBreakHelper().lockTarget(pos) ? Result.ATTEMPTED : Result.UNAVAILABLE;
+    }
+
+    @Override
+    public void stopBreaking() {
+        baritone.getInputOverrideHandler().getBlockBreakHelper().clearTarget();
+    }
+
+    @Override
+    public boolean isBreaking() {
+        return baritone.getInputOverrideHandler().getBlockBreakHelper().hasTarget();
     }
 }
