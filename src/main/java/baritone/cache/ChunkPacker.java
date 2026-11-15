@@ -84,6 +84,7 @@ public final class ChunkPacker {
 
     private static PathingBlockType getPathingBlockType(BlockState state, Chunk chunk, int x, int y, int z) {
         Block block = state.getBlock();
+        if (LegacyBlockRules.isTerrainHazard(state)) return PathingBlockType.AVOID;
         if (LegacyBlockRules.isWater(state)) {
             if (LegacyBlockRules.possiblyFlowing(state)
                     || (x != 15 && LegacyBlockRules.possiblyFlowing(getFromChunk(chunk, x + 1, y, z)))

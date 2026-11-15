@@ -25,6 +25,7 @@ public final class LegacyMovementRules {
     public static Ternary canWalkThroughBlockState(BlockState state) {
         Block block = state.getBlock();
         if (block == Blocks.air) return YES;
+        if (LegacyBlockRules.isTerrainHazard(state)) return NO;
         if (LegacyBlockRules.avoidWalkingInto(state) && !LegacyBlockRules.isWater(state)) return NO;
         if (Baritone.settings().blocksToAvoid.value.contains(block)
                 || block instanceof BlockSlab || block instanceof BlockTrapDoor
@@ -67,6 +68,7 @@ public final class LegacyMovementRules {
 
     public static Ternary canWalkOnBlockState(BlockState state) {
         Block block = state.getBlock();
+        if (LegacyBlockRules.isTerrainHazard(state)) return NO;
         if (LegacyBlockRules.isWater(state)) return MAYBE;
         if (block.getMaterial() == Material.lava) return Baritone.settings().assumeWalkOnLava.value ? MAYBE : NO;
         if (block == Blocks.ladder || (block == Blocks.vine && Baritone.settings().allowVines.value)

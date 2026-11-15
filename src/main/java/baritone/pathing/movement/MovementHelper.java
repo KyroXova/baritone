@@ -194,13 +194,11 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static boolean canWalkOn(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
         Ternary canWalkOn = LegacyMovementRules.canWalkOnBlockState(state);
-        if (canWalkOn == YES) {
-            return true;
-        }
         if (canWalkOn == NO) {
             return false;
         }
-        return LegacyMovementRules.canWalkOnPosition(bsi, x, y, z, state);
+        return (canWalkOn == YES || LegacyMovementRules.canWalkOnPosition(bsi, x, y, z, state))
+                && !adjacentTerrainHazard(bsi, x, y, z);
     }
 
     static Ternary canWalkOnBlockState(BlockState state) {
@@ -212,8 +210,19 @@ public interface MovementHelper extends ActionCosts, Helper {
     }
 
     static boolean canWalkOn(CalculationContext context, int x, int y, int z, BlockState state) {
-        return context.precomputedData.canWalkOn(context.bsi, x, y, z, state);
+        return context.precomputedData.canWalkOn(context.bsi, x, y, z, state)
+                && !adjacentTerrainHazard(context.bsi, x, y, z);
     }
+
+    static boolean adjacentTerrainHazard(BlockStateInterface bsi, int x, int y, int z) {
+        for (int[] offset : HORIZONTAL_HAZARDS) {
+            if (LegacyBlockRules.isTerrainHazard(bsi.get0(x + offset[0], y + 1, z + offset[1]))
+                    || LegacyBlockRules.isTerrainHazard(bsi.get0(x + offset[0], y + 2, z + offset[1]))) return true;
+        }
+        return false;
+    }
+
+    int[][] HORIZONTAL_HAZARDS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
 
     static boolean canWalkOn(CalculationContext context, int x, int y, int z) {
         return canWalkOn(context, x, y, z, context.get(x, y, z));
@@ -286,6 +295,7 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static double getMiningDurationTicks(CalculationContext context, int x, int y, int z, BlockState state, boolean includeFalling) {
         Block block = state.getBlock();
+        if (LegacyBlockRules.isTerrainHazard(state)) return COST_INF;
         if (!canWalkThrough(context, x, y, z, state)) {
             if (block.getMaterial().isLiquid()) {
                 return COST_INF;
