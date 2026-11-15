@@ -332,6 +332,12 @@ public class PathExecutor implements IPathExecutor, Helper {
             return true;
         }
 
+        if (current instanceof MovementTraverse) {
+            if (Baritone.settings().allowSprint.value && new CalculationContext(behavior.baritone, false).canSprint) {
+                return true;
+            }
+        }
+
         if (current instanceof MovementDescend) {
             if (pathPosition < path.length() - 2) {
                 IMovement next = path.movements().get(pathPosition + 1);

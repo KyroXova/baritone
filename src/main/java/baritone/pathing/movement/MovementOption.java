@@ -83,7 +83,7 @@ public final class MovementOption {
     
     public static Stream<MovementOption> getOptions(float motionX, float motionZ, boolean canSprint) {
         return Stream.of(
-                new MovementOption(Input.MOVE_FORWARD, canSprint ? motionX * SPRINT_MULTIPLIER : motionX, canSprint ? motionZ * SPRINT_MULTIPLIER : motionZ),
+                new MovementOption(Input.MOVE_FORWARD, canSprint ? Input.SPRINT : null, canSprint ? motionX * SPRINT_MULTIPLIER : motionX, canSprint ? motionZ * SPRINT_MULTIPLIER : motionZ),
                 new MovementOption(Input.MOVE_BACK, -motionX, -motionZ),
                 new MovementOption(Input.MOVE_LEFT, -motionZ, motionX),
                 new MovementOption(Input.MOVE_RIGHT, motionZ, -motionX),
