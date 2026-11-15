@@ -20,7 +20,6 @@ package baritone.utils.schematic.format.defaults;
 import baritone.api.utils.BlockState;
 import baritone.utils.schematic.StaticSchematic;
 import baritone.utils.type.VarInt;
-import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.nbt.NBTTagCompound;
@@ -42,7 +41,7 @@ public final class SpongeSchematic extends StaticSchematic {
         this.z = nbt.getShort("Length");
         this.states = new BlockState[this.x][this.z][this.y];
 
-        Int2ObjectArrayMap<BlockState> palette = new Int2ObjectArrayMap<>();
+        Map<Integer, BlockState> palette = new HashMap<>();
         NBTTagCompound paletteTag = nbt.getCompoundTag("Palette");
         if (paletteTag != null) {
             for (Object keyObj : paletteTag.func_150296_c()) {

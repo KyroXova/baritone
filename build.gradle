@@ -46,7 +46,6 @@ sourceSets {
 dependencies {
     embedded 'org.spongepowered:mixin:0.8.7'
     embedded 'it.unimi.dsi:fastutil:8.5.12'
-    embedded 'dev.babbaj:nether-pathfinder:1.6'
     embedded 'com.google.code.findbugs:jsr305:3.0.2'
     annotationProcessor 'org.spongepowered:mixin:0.8.7'
     annotationProcessor 'org.ow2.asm:asm-tree:9.7'
@@ -57,7 +56,6 @@ dependencies {
     compileOnly 'org.ow2.asm:asm:9.7'
     compileOnly 'org.ow2.asm:asm-tree:9.7'
     compileOnly 'org.ow2.asm:asm-commons:9.7'
-    implementation 'dev.babbaj:nether-pathfinder:1.6'
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'it.unimi.dsi:fastutil:8.5.12'
     testImplementation 'org.lwjgl.lwjgl:lwjgl:2.9.4-nightly-20150209'
@@ -89,7 +87,26 @@ tasks.named('reobfJar') {
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
-        configurations.embedded.collect { zipTree(it) }
+        configurations.embedded.collect {
+            zipTree(it).matching {
+                exclude 'it/unimi/dsi/fastutil/booleans/**'
+                exclude 'it/unimi/dsi/fastutil/bytes/**'
+                exclude 'it/unimi/dsi/fastutil/chars/**'
+                exclude 'it/unimi/dsi/fastutil/doubles/**'
+                exclude 'it/unimi/dsi/fastutil/floats/**'
+                exclude 'it/unimi/dsi/fastutil/shorts/**'
+                exclude 'it/unimi/dsi/fastutil/io/**'
+                exclude 'it/unimi/dsi/fastutil/objects/Object2Boolean*'
+                exclude 'it/unimi/dsi/fastutil/objects/Object2Byte*'
+                exclude 'it/unimi/dsi/fastutil/objects/Object2Char*'
+                exclude 'it/unimi/dsi/fastutil/objects/Object2Double*'
+                exclude 'it/unimi/dsi/fastutil/objects/Object2Float*'
+                exclude 'it/unimi/dsi/fastutil/objects/Object2Short*'
+                exclude 'it/unimi/dsi/fastutil/objects/Object2Reference*'
+                exclude 'it/unimi/dsi/fastutil/objects/Reference*'
+                exclude 'org/spongepowered/tools/**'
+            }
+        }
     }
     exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'META-INF/MANIFEST.MF', 'module-info.class'
     // Forge 1.7's class scanner cannot read the Java 9 ModLauncher integration.
