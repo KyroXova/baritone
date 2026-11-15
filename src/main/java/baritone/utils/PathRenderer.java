@@ -57,21 +57,23 @@ public final class PathRenderer implements IRenderer {
         final float partialTicks = event.getPartialTicks();
         final Goal goal = behavior.getGoal();
 
-        if (goal != null && settings.renderGoal.value) {
+        boolean showGoal = behavior.renderGoalOverride == null ? settings.renderGoal.value : behavior.renderGoalOverride;
+        boolean showPath = behavior.renderPathOverride == null ? settings.renderPath.value : behavior.renderPathOverride;
+        boolean showBlocks = behavior.renderBlocksOverride == null
+                ? settings.renderPath.value && settings.renderSelectionBoxes.value : behavior.renderBlocksOverride;
+        if (goal != null && showGoal) {
             drawGoal(ctx, goal, partialTicks, settings.colorGoalBox.value);
-        }
-
-        if (!settings.renderPath.value) {
-            return;
         }
 
         PathExecutor current = behavior.getCurrent();
         PathExecutor next = behavior.getNext();
-        if (current != null && settings.renderSelectionBoxes.value) {
+        if (current != null && showBlocks) {
             drawManySelectionBoxes(current.toBreak(), settings.colorBlocksToBreak.value);
             drawManySelectionBoxes(current.toPlace(), settings.colorBlocksToPlace.value);
             drawManySelectionBoxes(current.toWalkInto(), settings.colorBlocksToWalkInto.value);
         }
+
+        if (!showPath) return;
 
         if (current != null && current.getPath() != null) {
             int renderBegin = Math.max(current.getPosition() - 3, 0);

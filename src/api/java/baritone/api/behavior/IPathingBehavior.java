@@ -31,6 +31,9 @@ import java.util.Optional;
  */
 public interface IPathingBehavior extends IBehavior {
 
+    /** Temporarily override path, block and goal rendering; null restores each configured setting. */
+    void setNavigationRenderOverride(Boolean path, Boolean blocks, Boolean goal);
+
     /**
      * Returns the estimated remaining ticks in the current pathing
      * segment. Given that the return type is an optional, {@link Optional#empty()}

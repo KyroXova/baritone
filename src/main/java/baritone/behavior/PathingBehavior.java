@@ -45,6 +45,17 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public final class PathingBehavior extends Behavior implements IPathingBehavior, Helper {
 
+    public volatile Boolean renderPathOverride;
+    public volatile Boolean renderBlocksOverride;
+    public volatile Boolean renderGoalOverride;
+
+    @Override
+    public void setNavigationRenderOverride(Boolean path, Boolean blocks, Boolean goal) {
+        renderPathOverride = path;
+        renderBlocksOverride = blocks;
+        renderGoalOverride = goal;
+    }
+
     private PathExecutor current;
     private PathExecutor next;
 
