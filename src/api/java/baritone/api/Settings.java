@@ -31,8 +31,8 @@ import net.minecraft.init.Blocks;
 import baritone.api.schematic.Mirror;
 import baritone.api.schematic.Rotation;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import java.awt.*;
 import java.lang.annotation.ElementType;
@@ -54,7 +54,7 @@ import java.util.function.Consumer;
  * @author leijurv
  */
 public final class Settings {
-    private static final Logger LOGGER = LoggerFactory.getLogger("Baritone");
+    private static final Logger LOGGER = Logger.getLogger("Baritone");
 
     /**
      * Allow Baritone to break blocks
@@ -1281,7 +1281,7 @@ public final class Settings {
         try {
             Minecraft.getMinecraft().ingameGUI.getChatGUI().printChatMessage(msg);
         } catch (Throwable t) {
-            LOGGER.warn("Failed to log message to chat: " + msg.getUnformattedText(), t);
+            LOGGER.log(Level.WARNING, "Failed to log message to chat: " + msg.getUnformattedText(), t);
         }
     });
 
