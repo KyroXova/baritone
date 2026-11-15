@@ -80,6 +80,11 @@ public final class InputOverrideHandler extends Behavior implements IInputOverri
     @Override
     public final void clearAllKeys() {
         this.inputForceStateMap.clear();
+        if (ctx.minecraft().gameSettings != null && ctx.minecraft().gameSettings.keyBindSprint != null) {
+            net.minecraft.client.settings.KeyBinding.setKeyBindState(
+                ctx.minecraft().gameSettings.keyBindSprint.getKeyCode(),
+                net.minecraft.client.settings.GameSettings.isKeyDown(ctx.minecraft().gameSettings.keyBindSprint));
+        }
     }
 
     @Override

@@ -170,6 +170,19 @@ public final class PathingBehavior extends Behavior implements IPathingBehavior,
                 return;
             }
             safeToCancel = current.onTick();
+            if (current != null && current.isSprinting()) {
+                if (ctx.player() != null) {
+                    ctx.player().setSprinting(true);
+                }
+                if (ctx.minecraft().gameSettings != null && ctx.minecraft().gameSettings.keyBindSprint != null) {
+                    net.minecraft.client.settings.KeyBinding.setKeyBindState(
+                        ctx.minecraft().gameSettings.keyBindSprint.getKeyCode(), true);
+                }
+            } else if (ctx.minecraft().gameSettings != null && ctx.minecraft().gameSettings.keyBindSprint != null) {
+                net.minecraft.client.settings.KeyBinding.setKeyBindState(
+                    ctx.minecraft().gameSettings.keyBindSprint.getKeyCode(),
+                    net.minecraft.client.settings.GameSettings.isKeyDown(ctx.minecraft().gameSettings.keyBindSprint));
+            }
             if (current.failed() || current.finished()) {
                 current = null;
                 if (goal == null || goal.isInGoal(ctx.playerFeet())) {
