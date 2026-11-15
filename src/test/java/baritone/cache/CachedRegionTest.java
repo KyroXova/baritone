@@ -18,10 +18,25 @@
 package baritone.cache;
 
 import org.junit.Test;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 
 import static junit.framework.TestCase.assertEquals;
 
 public class CachedRegionTest {
+
+    @Test
+    public void readsLegacyAndExtendedMetadata() throws Exception {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.writeByte(146);
+        out.writeInt(1024);
+        DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes.toByteArray()));
+        assertEquals(146, CachedRegion.readMetadata(in, false));
+        assertEquals(1024, CachedRegion.readMetadata(in, true));
+    }
 
     @Test
     public void blockPosSaving() {

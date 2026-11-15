@@ -44,6 +44,7 @@ public final class CachedRegion implements ICachedRegion {
      * Magic value to detect invalid cache files, or incompatible cache files saved in an old version of Baritone
      */
     private static final int CACHED_REGION_MAGIC = 456022912;
+    private static final int EXTENDED_METADATA_MAGIC = 456022913;
 
     /**
      * All of the chunks in this region: A 32x32 array of them.
@@ -132,7 +133,7 @@ public final class CachedRegion implements ICachedRegion {
                     GZIPOutputStream gzipOut = new GZIPOutputStream(fileOut, 16384);
                     DataOutputStream out = new DataOutputStream(gzipOut)
             ) {
-                out.writeInt(CACHED_REGION_MAGIC);
+                out.writeInt(EXTENDED_METADATA_MAGIC);
                 for (int x = 0; x < 32; x++) {
                     for (int z = 0; z < 32; z++) {
                         CachedChunk chunk = this.chunks[x][z];
@@ -152,7 +153,7 @@ public final class CachedRegion implements ICachedRegion {
                         if (chunks[x][z] != null) {
                             for (int i = 0; i < 256; i++) {
                                 out.writeUTF(BlockUtils.blockToString(chunks[x][z].getOverview()[i].getBlock()));
-                                out.writeByte(chunks[x][z].getOverview()[i].getMetadata());
+                                out.writeInt(chunks[x][z].getOverview()[i].getMetadata());
                             }
                         }
                     }
@@ -168,7 +169,7 @@ public final class CachedRegion implements ICachedRegion {
                                 for (BetterBlockPos pos : entry.getValue()) {
                                     out.writeByte((byte) (pos.getZ() << 4 | pos.getX()));
                                     out.writeInt(pos.getY());
-                                    out.writeByte(chunks[x][z].getSpecialMetadata(pos));
+                                    out.writeInt(chunks[x][z].getSpecialMetadata(pos));
                                 }
                             }
                         }
@@ -210,12 +211,13 @@ public final class CachedRegion implements ICachedRegion {
                     DataInputStream in = new DataInputStream(gzipIn)
             ) {
                 int magic = in.readInt();
-                if (magic != CACHED_REGION_MAGIC) {
+                if (magic != CACHED_REGION_MAGIC && magic != EXTENDED_METADATA_MAGIC) {
                     // in the future, if we change the format on disk
                     // we can keep converters for the old format
                     // by switching on the magic value, and either loading it normally, or loading through a converter.
                     throw new IOException("Bad magic value " + magic);
                 }
+                boolean extendedMetadata = magic == EXTENDED_METADATA_MAGIC;
                 boolean[][] present = new boolean[32][32];
                 BitSet[][] bitSets = new BitSet[32][32];
                 Map<String, List<BetterBlockPos>>[][] location = new Map[32][32];
@@ -247,7 +249,7 @@ public final class CachedRegion implements ICachedRegion {
                     for (int z = 0; z < 32; z++) {
                         if (present[x][z]) {
                             for (int i = 0; i < 256; i++) {
-                                overview[x][z][i] = new BlockState(BlockUtils.stringToBlockRequired(in.readUTF()), in.readUnsignedByte());
+                                overview[x][z][i] = new BlockState(BlockUtils.stringToBlockRequired(in.readUTF()), readMetadata(in, extendedMetadata));
                             }
                         }
                     }
@@ -276,7 +278,7 @@ public final class CachedRegion implements ICachedRegion {
                                     int Z = (xz >>> 4) & 0x0f;
                                     int Y = in.readInt();
                                     locs.add(new BetterBlockPos(X, Y, Z));
-                                    specialMetadata[x][z].put(CachedChunk.getPositionIndex(X, Y, Z), in.readUnsignedByte());
+                                    specialMetadata[x][z].put(CachedChunk.getPositionIndex(X, Y, Z), readMetadata(in, extendedMetadata));
                                 }
                             }
                         }
@@ -361,5 +363,9 @@ public final class CachedRegion implements ICachedRegion {
 
     private static Path getRegionFile(Path cacheDir, int regionX, int regionZ) {
         return Paths.get(cacheDir.toString(), "r." + regionX + "." + regionZ + ".bcr");
+    }
+
+    static int readMetadata(DataInput in, boolean extendedMetadata) throws IOException {
+        return extendedMetadata ? in.readInt() : in.readUnsignedByte();
     }
 }

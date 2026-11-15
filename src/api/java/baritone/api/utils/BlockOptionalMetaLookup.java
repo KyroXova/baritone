@@ -17,18 +17,22 @@ import java.util.stream.Stream;
 public class BlockOptionalMetaLookup {
     private final ImmutableSet<Block> blockSet;
     private final ImmutableSet<BlockState> blockStateSet;
+    private final ImmutableSet<Block> wildcardBlocks;
     private final BlockOptionalMeta[] boms;
 
     public BlockOptionalMetaLookup(BlockOptionalMeta... boms) {
         this.boms = boms;
         Set<Block> blocks = new HashSet<>();
         Set<BlockState> blockStates = new HashSet<>();
+        Set<Block> wildcards = new HashSet<>();
         for (BlockOptionalMeta bom : boms) {
             blocks.add(bom.getBlock());
             blockStates.addAll(bom.getAllBlockStates());
+            if (bom.getMeta() == null) wildcards.add(bom.getBlock());
         }
         this.blockSet = ImmutableSet.copyOf(blocks);
         this.blockStateSet = ImmutableSet.copyOf(blockStates);
+        this.wildcardBlocks = ImmutableSet.copyOf(wildcards);
     }
 
     public BlockOptionalMetaLookup(Block... blocks) {
@@ -54,7 +58,7 @@ public class BlockOptionalMetaLookup {
     }
 
     public boolean has(BlockState state) {
-        return blockStateSet.contains(state);
+        return state != null && (wildcardBlocks.contains(state.getBlock()) || blockStateSet.contains(state));
     }
 
     public boolean has(ItemStack stack) {

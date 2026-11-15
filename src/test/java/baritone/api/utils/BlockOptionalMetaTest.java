@@ -66,8 +66,11 @@ public class BlockOptionalMetaTest {
 
         assertTrue(lookup.has(new BlockState(testBlockA, 0)));
         assertTrue(lookup.has(new BlockState(testBlockA, 3)));
+        assertTrue(lookup.has(new BlockState(testBlockA, 146)));
+        assertTrue(lookup.has(new BlockState(testBlockA, 1024)));
         assertTrue(lookup.has(new BlockState(testBlockB, 7)));
         assertFalse(lookup.has(new BlockState(testBlockB, 0)));
+        assertFalse(lookup.has(new BlockState(testBlockB, 146)));
     }
 
     @Test
