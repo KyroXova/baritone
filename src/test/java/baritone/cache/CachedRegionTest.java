@@ -22,10 +22,37 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.fail;
 
 public class CachedRegionTest {
+
+    @Rule
+    public TemporaryFolder temp = new TemporaryFolder();
+
+    @Test
+    public void failedWritePreservesExistingRegion() throws Exception {
+        Path region = temp.newFile("region.bcr").toPath();
+        Files.write(region, "old".getBytes(StandardCharsets.UTF_8));
+        try {
+            CachedRegion.writeAtomically(region, path -> {
+                Files.write(path, "partial".getBytes(StandardCharsets.UTF_8));
+                throw new IOException("write failed");
+            });
+            fail("Expected write failure");
+        } catch (IOException expected) {
+            assertEquals("old", new String(Files.readAllBytes(region), StandardCharsets.UTF_8));
+        }
+        CachedRegion.writeAtomically(region, path -> Files.write(path, "new".getBytes(StandardCharsets.UTF_8)));
+        assertEquals("new", new String(Files.readAllBytes(region), StandardCharsets.UTF_8));
+    }
 
     @Test
     public void readsLegacyAndExtendedMetadata() throws Exception {

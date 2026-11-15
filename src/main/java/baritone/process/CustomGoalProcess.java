@@ -51,6 +51,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
      */
     private State state;
     private boolean forbidBreaking;
+    private boolean paused;
 
     public CustomGoalProcess(Baritone baritone) {
         super(baritone);
@@ -59,6 +60,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
     @Override
     public void setGoal(Goal goal) {
         this.forbidBreaking = false;
+        this.paused = false;
         this.goal = goal;
         this.mostRecentGoal = goal;
         if (goal == null) {
@@ -116,6 +118,9 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
 
     @Override
     public PathingCommand onTick(boolean calcFailed, boolean isSafeToCancel) {
+        if (paused) {
+            return new PathingCommand(this.goal, PathingCommandType.REQUEST_PAUSE);
+        }
         switch (this.state) {
             case GOAL_SET:
                 return new PathingCommand(this.goal, PathingCommandType.CANCEL_AND_SET_GOAL);
@@ -150,6 +155,12 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
         this.state = State.NONE;
         this.goal = null;
         this.forbidBreaking = false;
+        this.paused = false;
+    }
+
+    @Override
+    public void setPaused(boolean paused) {
+        this.paused = paused;
     }
 
     @Override

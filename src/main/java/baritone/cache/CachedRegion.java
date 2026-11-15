@@ -27,6 +27,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -125,11 +127,9 @@ public final class CachedRegion implements ICachedRegion {
             }
             System.out.println("Saving region " + x + "," + z + " to disk " + path);
             Path regionFile = getRegionFile(path, this.x, this.z);
-            if (!Files.exists(regionFile)) {
-                Files.createFile(regionFile);
-            }
+            writeAtomically(regionFile, temporaryFile -> {
             try (
-                    FileOutputStream fileOut = new FileOutputStream(regionFile.toFile());
+                    FileOutputStream fileOut = new FileOutputStream(temporaryFile.toFile());
                     GZIPOutputStream gzipOut = new GZIPOutputStream(fileOut, 16384);
                     DataOutputStream out = new DataOutputStream(gzipOut)
             ) {
@@ -183,6 +183,7 @@ public final class CachedRegion implements ICachedRegion {
                     }
                 }
             }
+            });
             hasUnsavedChanges = false;
             System.out.println("Saved region successfully");
         } catch (Exception ex) {
@@ -367,5 +368,23 @@ public final class CachedRegion implements ICachedRegion {
 
     static int readMetadata(DataInput in, boolean extendedMetadata) throws IOException {
         return extendedMetadata ? in.readInt() : in.readUnsignedByte();
+    }
+
+    interface FileWriter {
+        void write(Path path) throws IOException;
+    }
+
+    static void writeAtomically(Path target, FileWriter writer) throws IOException {
+        Path temporary = Files.createTempFile(target.getParent(), target.getFileName().toString(), ".tmp");
+        try {
+            writer.write(temporary);
+            try {
+                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException unsupported) {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 }
