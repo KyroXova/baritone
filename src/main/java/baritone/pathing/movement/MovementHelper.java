@@ -216,13 +216,20 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static boolean adjacentTerrainHazard(BlockStateInterface bsi, int x, int y, int z) {
         for (int[] offset : HORIZONTAL_HAZARDS) {
-            if (LegacyBlockRules.isTerrainHazard(bsi.get0(x + offset[0], y + 1, z + offset[1]))
-                    || LegacyBlockRules.isTerrainHazard(bsi.get0(x + offset[0], y + 2, z + offset[1]))) return true;
+            for (int dy = 0; dy <= 2; dy++) {
+                BlockState neighbor = bsi.get0(x + offset[0], y + dy, z + offset[1]);
+                if (isHazardNeighbor(neighbor)) return true;
+            }
         }
         return false;
     }
 
-    int[][] HORIZONTAL_HAZARDS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+    static boolean isHazardNeighbor(BlockState state) {
+        return LegacyBlockRules.isTerrainHazard(state)
+                || state.getBlock().getMaterial() == net.minecraft.block.material.Material.lava;
+    }
+
+    int[][] HORIZONTAL_HAZARDS = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
     static boolean canWalkOn(CalculationContext context, int x, int y, int z) {
         return canWalkOn(context, x, y, z, context.get(x, y, z));

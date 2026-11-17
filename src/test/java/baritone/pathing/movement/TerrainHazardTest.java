@@ -30,4 +30,12 @@ public class TerrainHazardTest {
         assertTrue(LegacyBlockRules.hazardName("example:berrybush"));
         assertFalse(LegacyBlockRules.hazardName("example:blueberry_juice"));
     }
+
+    @Test
+    public void cachedAvoidBlocksRemainHazardousToAdjacentRoutes() {
+        BlockState cached = new BlockState(new Block(Material.lava) {}, 0);
+        assertTrue(MovementHelper.isHazardNeighbor(cached));
+        assertTrue(MovementHelper.isHazardNeighbor(new BlockState(new QuicksandBlock(), 0)));
+        assertFalse(MovementHelper.isHazardNeighbor(new BlockState(new Block(Material.rock) {}, 0)));
+    }
 }

@@ -86,9 +86,7 @@ public final class LegacyMovementRules {
             BlockState above = bsi.get0(x, y + 1, z);
             if (above.getBlock() == Blocks.waterlily || above.getBlock() == Blocks.carpet) return true;
             if (isFlowing(bsi, x, y, z, state)
-                    || (LegacyBlockRules.isWater(above) && LegacyBlockRules.possiblyFlowing(above))) {
-                return LegacyBlockRules.isWater(above) && !Baritone.settings().assumeWalkOnWater.value;
-            }
+                    || (LegacyBlockRules.isWater(above) && LegacyBlockRules.possiblyFlowing(above))) return false;
             return LegacyBlockRules.isWater(above) ^ Baritone.settings().assumeWalkOnWater.value;
         }
         if (state.getBlock().getMaterial() == Material.lava) {
