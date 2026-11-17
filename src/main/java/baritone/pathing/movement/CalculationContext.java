@@ -96,7 +96,7 @@ public class CalculationContext {
         this.worldData = (WorldData) baritone.getPlayerContext().worldData();
         this.bsi = new BlockStateInterface(baritone.getPlayerContext(), forUseOnAnotherThread);
         this.toolSet = new ToolSet(player);
-        this.hasThrowaway = Baritone.settings().allowPlace.value && ((Baritone) baritone).getInventoryBehavior().hasGenericThrowaway();
+        this.hasThrowaway = !forbidBreaking && Baritone.settings().allowPlace.value && ((Baritone) baritone).getInventoryBehavior().hasGenericThrowaway();
         boolean waterBucketOnHotbar = false;
         for (int slot = 0; slot < 9; slot++) {
             ItemStack stack = player.inventory.mainInventory[slot];
@@ -105,13 +105,13 @@ public class CalculationContext {
                 break;
             }
         }
-        this.hasWaterBucket = Baritone.settings().allowWaterBucketFall.value && waterBucketOnHotbar && !world.provider.isHellWorld;
+        this.hasWaterBucket = !forbidBreaking && Baritone.settings().allowWaterBucketFall.value && waterBucketOnHotbar && !world.provider.isHellWorld;
         this.canSprint = Baritone.settings().allowSprint.value && player.getFoodStats().getFoodLevel() > 6;
         this.placeBlockCost = Baritone.settings().blockPlacementPenalty.value;
         this.allowBreak = !forbidBreaking && Baritone.settings().allowBreak.value;
         this.allowBreakAnyway = forbidBreaking ? new ArrayList<>() : new ArrayList<>(Baritone.settings().allowBreakAnyway.value);
         this.allowParkour = Baritone.settings().allowParkour.value;
-        this.allowParkourPlace = Baritone.settings().allowParkourPlace.value;
+        this.allowParkourPlace = !forbidBreaking && Baritone.settings().allowParkourPlace.value;
         this.allowJumpAtBuildLimit = Baritone.settings().allowJumpAtBuildLimit.value;
         this.allowParkourAscend = Baritone.settings().allowParkourAscend.value;
         this.assumeWalkOnWater = Baritone.settings().assumeWalkOnWater.value;
