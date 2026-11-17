@@ -46,7 +46,7 @@ public final class LegacyMovementRules {
         if (LegacyBlockRules.isWater(state)) {
             if (isFlowing(bsi, x, y, z, state) || Baritone.settings().assumeWalkOnWater.value) return false;
             BlockState above = bsi.get0(x, y + 1, z);
-            return !above.getBlock().getMaterial().isLiquid() && above.getBlock() != Blocks.waterlily;
+            return !above.getBlock().getMaterial().isLiquid();
         }
         return block.getBlocksMovement(bsi.access, x, y, z);
     }
@@ -84,7 +84,7 @@ public final class LegacyMovementRules {
     public static boolean canWalkOnPosition(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
         if (LegacyBlockRules.isWater(state)) {
             BlockState above = bsi.get0(x, y + 1, z);
-            if (above.getBlock() == Blocks.waterlily || above.getBlock() == Blocks.carpet) return true;
+            if (above.getBlock() == Blocks.carpet) return true;
             if (isFlowing(bsi, x, y, z, state)
                     || (LegacyBlockRules.isWater(above) && LegacyBlockRules.possiblyFlowing(above))) return false;
             return LegacyBlockRules.isWater(above) ^ Baritone.settings().assumeWalkOnWater.value;
