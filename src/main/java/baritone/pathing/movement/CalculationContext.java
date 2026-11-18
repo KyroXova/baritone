@@ -19,6 +19,7 @@ package baritone.pathing.movement;
 
 import baritone.Baritone;
 import baritone.api.IBaritone;
+import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.pathing.movement.ActionCosts;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.BlockState;
@@ -78,6 +79,7 @@ public class CalculationContext {
     public final BetterWorldBorder worldBorder;
 
     public final PrecomputedData precomputedData;
+    private final GoalBlock protectedPlacementGoal;
 
     public CalculationContext(IBaritone baritone) {
         this(baritone, false);
@@ -92,6 +94,11 @@ public class CalculationContext {
     }
 
     public CalculationContext(IBaritone baritone, boolean forUseOnAnotherThread, boolean forbidBreaking, boolean allowPlacement) {
+        this(baritone, forUseOnAnotherThread, forbidBreaking, allowPlacement, null);
+    }
+
+    public CalculationContext(IBaritone baritone, boolean forUseOnAnotherThread, boolean forbidBreaking, boolean allowPlacement, GoalBlock protectedPlacementGoal) {
+        this.protectedPlacementGoal = protectedPlacementGoal;
         this.precomputedData = new PrecomputedData();
         this.safeForThreadedUse = forUseOnAnotherThread;
         this.baritone = baritone;
@@ -161,6 +168,10 @@ public class CalculationContext {
 
     public double costOfPlacingAt(int x, int y, int z, BlockState current) {
         if (!hasThrowaway) { // only true if allowPlace is true, see constructor
+            return COST_INF;
+        }
+        if (protectedPlacementGoal != null && Math.abs(x - protectedPlacementGoal.x) <= 8
+                && Math.abs(z - protectedPlacementGoal.z) <= 8 && y >= protectedPlacementGoal.y - 1) {
             return COST_INF;
         }
         if (isPossiblyProtected(x, y, z)) {
