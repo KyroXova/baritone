@@ -53,6 +53,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
     private State state;
     private boolean forbidBreaking;
     private boolean allowPlacement;
+    private GoalBlock protectedFloor;
     private boolean paused;
 
     public CustomGoalProcess(Baritone baritone) {
@@ -63,6 +64,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
     public void setGoal(Goal goal) {
         this.forbidBreaking = false;
         this.allowPlacement = false;
+        this.protectedFloor = null;
         this.paused = false;
         this.goal = goal;
         this.mostRecentGoal = goal;
@@ -101,10 +103,17 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
         path();
     }
 
+    @Override
+    public void setGoalAndPathProtectingPuzzleFloor(Goal goal, baritone.api.utils.BetterBlockPos center) {
+        setGoal(goal);
+        protectedFloor = new GoalBlock(center.x, center.y + 1, center.z);
+        path();
+    }
+
     private PathingCommand pathCommand(PathingCommandType type) {
-        return forbidBreaking && goal != null
-                ? new PathingCommandContext(goal, type, new CalculationContext(baritone, true, true, allowPlacement,
-                    allowPlacement && goal instanceof GoalBlock ? (GoalBlock) goal : null))
+        return (forbidBreaking || protectedFloor != null) && goal != null
+                ? new PathingCommandContext(goal, type, new CalculationContext(baritone, true, forbidBreaking, allowPlacement,
+                    protectedFloor != null ? protectedFloor : allowPlacement && goal instanceof GoalBlock ? (GoalBlock) goal : null))
                 : new PathingCommand(goal, type);
     }
 
@@ -168,6 +177,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
         this.goal = null;
         this.forbidBreaking = false;
         this.allowPlacement = false;
+        this.protectedFloor = null;
         this.paused = false;
     }
 

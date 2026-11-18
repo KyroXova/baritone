@@ -59,6 +59,9 @@ public interface ICustomGoalProcess extends IBaritoneProcess {
     /** Path without breaking blocks while allowing ordinary support placement. */
     void setGoalAndPathWithPlacementWithoutBreaking(Goal goal);
 
+    /** Path normally while protecting the specified puzzle floor from placement. */
+    void setGoalAndPathProtectingPuzzleFloor(Goal goal, baritone.api.utils.BetterBlockPos center);
+
     /** Pause or resume the current custom goal without cancelling other processes. */
     void setPaused(boolean paused);
 }

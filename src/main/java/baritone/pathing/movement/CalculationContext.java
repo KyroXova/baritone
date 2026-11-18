@@ -170,8 +170,8 @@ public class CalculationContext {
         if (!hasThrowaway) { // only true if allowPlace is true, see constructor
             return COST_INF;
         }
-        if (protectedPlacementGoal != null && Math.abs(x - protectedPlacementGoal.x) <= 8
-                && Math.abs(z - protectedPlacementGoal.z) <= 8 && y >= protectedPlacementGoal.y - 1) {
+        if (protectedPlacementGoal != null && Math.abs(x - protectedPlacementGoal.x) <= 16
+                && Math.abs(z - protectedPlacementGoal.z) <= 16 && y >= protectedPlacementGoal.y - 1) {
             return COST_INF;
         }
         if (isPossiblyProtected(x, y, z)) {
