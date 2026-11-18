@@ -77,6 +77,30 @@ public class ToolSet {
         return best;
     }
 
+    public int getBestSlotInInventory(BlockState state, boolean preferSilkTouch) {
+        int best = -1;
+        double highest = Double.NEGATIVE_INFINITY;
+        int lowestCost = Integer.MAX_VALUE;
+        boolean bestSilk = false;
+        for (int slot = 0; slot < 36; slot++) {
+            ItemStack stack = player.inventory.mainInventory[slot];
+            if (stack != null && !Baritone.settings().useSwordToMine.value && stack.getItem() instanceof ItemSword) continue;
+            if (stack != null && Baritone.settings().itemSaver.value && stack.getMaxDamage() > 1
+                    && stack.getItemDamage() + Baritone.settings().itemSaverThreshold.value >= stack.getMaxDamage()) continue;
+            double speed = toolStrength(stack, state);
+            boolean silk = hasSilkTouch(stack);
+            int cost = materialCost(stack);
+            if (speed > highest || (speed == highest && ((cost < lowestCost && (silk || !bestSilk))
+                    || (preferSilkTouch && silk && !bestSilk)))) {
+                best = slot;
+                highest = speed;
+                lowestCost = cost;
+                bestSilk = silk;
+            }
+        }
+        return best;
+    }
+
     /** Returns mining progress per tick, or a negative value for unbreakable blocks. */
     public static double calculateSpeedVsBlock(ItemStack stack, BlockState state, World world, int x, int y, int z) {
         float hardness;

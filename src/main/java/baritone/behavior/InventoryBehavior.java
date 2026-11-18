@@ -64,6 +64,14 @@ public final class InventoryBehavior extends Behavior implements Helper {
         if (pick >= 9) {
             requestSwapWithHotBar(pick, 0);
         }
+        int shovel = bestToolAgainst(Blocks.dirt);
+        if (shovel >= 9 && hasToolEfficiencyBetterThanHotbar(Blocks.dirt, shovel)) {
+            attemptToPutOnHotbar(shovel, slot -> slot == 0 || slot == 8);
+        }
+        int axe = bestToolAgainst(Blocks.log);
+        if (axe >= 9 && hasToolEfficiencyBetterThanHotbar(Blocks.log, axe)) {
+            attemptToPutOnHotbar(axe, slot -> slot == 0 || slot == 8);
+        }
         if (lastTickRequestedMove != null) {
             logDebug("Remembering to move " + lastTickRequestedMove[0] + " " + lastTickRequestedMove[1] + " from a previous tick");
             requestSwapWithHotBar(lastTickRequestedMove[0], lastTickRequestedMove[1]);
@@ -148,6 +156,22 @@ public final class InventoryBehavior extends Behavior implements Helper {
             }
         }
         return bestInd;
+    }
+
+    private boolean hasToolEfficiencyBetterThanHotbar(Block against, int inInventory) {
+        ItemStack invStack = ctx.player().inventory.mainInventory[inInventory];
+        if (invStack == null) return false;
+        double invSpeed = ToolSet.calculateSpeedVsBlock(invStack, new BlockState(against, 0), ctx.world(), 0, 0, 0);
+        if (invSpeed <= 1.0) return false;
+        double bestHotbarSpeed = -1;
+        for (int i = 0; i < 9; i++) {
+            ItemStack s = ctx.player().inventory.mainInventory[i];
+            if (s != null) {
+                double speed = ToolSet.calculateSpeedVsBlock(s, new BlockState(against, 0), ctx.world(), 0, 0, 0);
+                if (speed > bestHotbarSpeed) bestHotbarSpeed = speed;
+            }
+        }
+        return invSpeed > bestHotbarSpeed;
     }
 
     public boolean hasGenericThrowaway() {

@@ -18,6 +18,7 @@ import baritone.utils.ToolSet;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.init.Blocks;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
@@ -342,7 +343,23 @@ public interface MovementHelper extends ActionCosts, Helper {
 
     static void switchToBestToolFor(IPlayerContext ctx, BlockState b, ToolSet ts, boolean preferSilkTouch) {
         if (Baritone.settings().autoTool.value && !Baritone.settings().assumeExternalAutoTool.value) {
-            ctx.player().inventory.currentItem = ts.getBestSlot(b, preferSilkTouch);
+            int bestHotbar = ts.getBestSlot(b, preferSilkTouch);
+            ctx.player().inventory.currentItem = bestHotbar;
+            if (Baritone.settings().allowInventory.value) {
+                int bestInvy = ts.getBestSlotInInventory(b, preferSilkTouch);
+                if (bestInvy >= 9) {
+                    ItemStack invStack = ctx.player().inventory.mainInventory[bestInvy];
+                    ItemStack hotStack = ctx.player().inventory.mainInventory[bestHotbar];
+                    double invSpeed = ToolSet.calculateSpeedVsBlock(invStack, b, ctx.world(), 0, 0, 0);
+                    double hotSpeed = ToolSet.calculateSpeedVsBlock(hotStack, b, ctx.world(), 0, 0, 0);
+                    if (invSpeed > hotSpeed) {
+                        IBaritone primary = BaritoneAPI.getProvider().getPrimaryBaritone();
+                        if (primary instanceof Baritone) {
+                            ((Baritone) primary).getInventoryBehavior().attemptToPutOnHotbar(bestInvy, slot -> slot == bestHotbar);
+                        }
+                    }
+                }
+            }
         }
     }
 

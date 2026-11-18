@@ -89,7 +89,7 @@ public final class Settings {
     /**
      * Allow Baritone to move items in your inventory to your hotbar
      */
-    public final Setting<Boolean> allowInventory = new Setting<>(false);
+    public final Setting<Boolean> allowInventory = new Setting<>(true);
 
     /**
      * Wait this many ticks between InventoryBehavior moving inventory items
