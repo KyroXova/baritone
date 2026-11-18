@@ -88,6 +88,10 @@ public class CalculationContext {
     }
 
     public CalculationContext(IBaritone baritone, boolean forUseOnAnotherThread, boolean forbidBreaking) {
+        this(baritone, forUseOnAnotherThread, forbidBreaking, false);
+    }
+
+    public CalculationContext(IBaritone baritone, boolean forUseOnAnotherThread, boolean forbidBreaking, boolean allowPlacement) {
         this.precomputedData = new PrecomputedData();
         this.safeForThreadedUse = forUseOnAnotherThread;
         this.baritone = baritone;
@@ -96,7 +100,7 @@ public class CalculationContext {
         this.worldData = (WorldData) baritone.getPlayerContext().worldData();
         this.bsi = new BlockStateInterface(baritone.getPlayerContext(), forUseOnAnotherThread);
         this.toolSet = new ToolSet(player);
-        this.hasThrowaway = !forbidBreaking && Baritone.settings().allowPlace.value && ((Baritone) baritone).getInventoryBehavior().hasGenericThrowaway();
+        this.hasThrowaway = (!forbidBreaking || allowPlacement) && Baritone.settings().allowPlace.value && ((Baritone) baritone).getInventoryBehavior().hasGenericThrowaway();
         boolean waterBucketOnHotbar = false;
         for (int slot = 0; slot < 9; slot++) {
             ItemStack stack = player.inventory.mainInventory[slot];
@@ -111,7 +115,7 @@ public class CalculationContext {
         this.allowBreak = !forbidBreaking && Baritone.settings().allowBreak.value;
         this.allowBreakAnyway = forbidBreaking ? new ArrayList<>() : new ArrayList<>(Baritone.settings().allowBreakAnyway.value);
         this.allowParkour = Baritone.settings().allowParkour.value;
-        this.allowParkourPlace = !forbidBreaking && Baritone.settings().allowParkourPlace.value;
+        this.allowParkourPlace = (!forbidBreaking || allowPlacement) && Baritone.settings().allowParkourPlace.value;
         this.allowJumpAtBuildLimit = Baritone.settings().allowJumpAtBuildLimit.value;
         this.allowParkourAscend = Baritone.settings().allowParkourAscend.value;
         this.assumeWalkOnWater = Baritone.settings().assumeWalkOnWater.value;

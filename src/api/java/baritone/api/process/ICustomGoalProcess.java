@@ -56,6 +56,9 @@ public interface ICustomGoalProcess extends IBaritoneProcess {
     /** Path to a goal without planning block breaking or placement, regardless of global settings. */
     void setGoalAndPathWithoutBreaking(Goal goal);
 
+    /** Path without breaking blocks while allowing ordinary support placement. */
+    void setGoalAndPathWithPlacementWithoutBreaking(Goal goal);
+
     /** Pause or resume the current custom goal without cancelling other processes. */
     void setPaused(boolean paused);
 }

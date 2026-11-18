@@ -51,6 +51,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
      */
     private State state;
     private boolean forbidBreaking;
+    private boolean allowPlacement;
     private boolean paused;
 
     public CustomGoalProcess(Baritone baritone) {
@@ -60,6 +61,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
     @Override
     public void setGoal(Goal goal) {
         this.forbidBreaking = false;
+        this.allowPlacement = false;
         this.paused = false;
         this.goal = goal;
         this.mostRecentGoal = goal;
@@ -90,9 +92,17 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
         path();
     }
 
+    @Override
+    public void setGoalAndPathWithPlacementWithoutBreaking(Goal goal) {
+        setGoal(goal);
+        forbidBreaking = true;
+        allowPlacement = true;
+        path();
+    }
+
     private PathingCommand pathCommand(PathingCommandType type) {
         return forbidBreaking && goal != null
-                ? new PathingCommandContext(goal, type, new CalculationContext(baritone, true, true))
+                ? new PathingCommandContext(goal, type, new CalculationContext(baritone, true, true, allowPlacement))
                 : new PathingCommand(goal, type);
     }
 
@@ -155,6 +165,7 @@ public final class CustomGoalProcess extends BaritoneProcessHelper implements IC
         this.state = State.NONE;
         this.goal = null;
         this.forbidBreaking = false;
+        this.allowPlacement = false;
         this.paused = false;
     }
 
