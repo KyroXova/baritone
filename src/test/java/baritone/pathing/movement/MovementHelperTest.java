@@ -14,6 +14,12 @@ import static org.junit.Assert.*;
 public class MovementHelperTest {
 
     @Test
+    public void lilyPadsAreObstaclesForSwimmers() {
+        assertEquals(baritone.pathing.precompute.Ternary.NO,
+                LegacyMovementRules.canWalkThroughBlockState(new BlockState(new net.minecraft.block.BlockLilyPad() {}, 0)));
+    }
+
+    @Test
     public void testBlockClassification() {
         Block rock = new Block(Material.rock) {};
         Block air = new Block(Material.air) {};

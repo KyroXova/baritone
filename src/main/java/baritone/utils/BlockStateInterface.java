@@ -77,6 +77,14 @@ public class BlockStateInterface {
         return chunk == null ? -1 : chunk.getHeightValue(x & 15, z & 15);
     }
 
+    public boolean hasFullTopCollision(int x, int y, int z, BlockState state) {
+        if (world == null || loadedChunk(x >> 4, z >> 4) == null) return false;
+        net.minecraft.util.AxisAlignedBB box = state.getBlock().getCollisionBoundingBoxFromPool(world, x, y, z);
+        return box != null && box.maxY >= y + 0.999D
+                && box.minX <= x + 0.2D && box.maxX >= x + 0.8D
+                && box.minZ <= z + 0.2D && box.maxZ >= z + 0.8D;
+    }
+
     public static Block getBlock(IPlayerContext ctx, BetterBlockPos pos) {
         return get(ctx, pos).getBlock();
     }

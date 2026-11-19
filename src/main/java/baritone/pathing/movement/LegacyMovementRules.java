@@ -25,6 +25,7 @@ public final class LegacyMovementRules {
     public static Ternary canWalkThroughBlockState(BlockState state) {
         Block block = state.getBlock();
         if (block == Blocks.air) return YES;
+        if (block instanceof net.minecraft.block.BlockLilyPad) return NO;
         if (LegacyBlockRules.isTerrainHazard(state)) return NO;
         if (LegacyBlockRules.avoidWalkingInto(state) && !LegacyBlockRules.isWater(state)) return NO;
         if (Baritone.settings().blocksToAvoid.value.contains(block)
@@ -82,6 +83,9 @@ public final class LegacyMovementRules {
     }
 
     public static boolean canWalkOnPosition(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
+        if (state.getBlock().getMaterial() == Material.leaves) {
+            return bsi.hasFullTopCollision(x, y, z, state);
+        }
         if (LegacyBlockRules.isWater(state)) {
             BlockState above = bsi.get0(x, y + 1, z);
             if (above.getBlock() == Blocks.carpet) return true;

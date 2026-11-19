@@ -321,6 +321,7 @@ public interface MovementHelper extends ActionCosts, Helper {
             }
             double result = 1 / strVsBlock;
             result += context.breakBlockAdditionalCost;
+            if (block.getMaterial() == net.minecraft.block.material.Material.leaves) result += 10;
             result *= mult;
             if (includeFalling) {
                 BlockState above = context.get(x, y + 1, z);
