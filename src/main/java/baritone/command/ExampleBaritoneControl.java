@@ -49,6 +49,10 @@ public class ExampleBaritoneControl extends Behavior implements Helper {
         String msg = event.getMessage();
         String prefix = settings.prefix.value;
         boolean forceRun = msg.startsWith(FORCE_COMMAND_PREFIX);
+        if (settings.embeddedChatDisabled.value) {
+            if (forceRun || (!prefix.isEmpty() && msg.startsWith(prefix))) event.cancel();
+            return;
+        }
         if ((settings.prefixControl.value && msg.startsWith(prefix)) || forceRun) {
             event.cancel();
             String commandStr = msg.substring(forceRun ? FORCE_COMMAND_PREFIX.length() : prefix.length());
@@ -130,7 +134,7 @@ public class ExampleBaritoneControl extends Behavior implements Helper {
 
     @Override
     public void onPreTabComplete(TabCompleteEvent event) {
-        if (!settings.prefixControl.value) {
+        if (settings.embeddedChatDisabled.value || !settings.prefixControl.value) {
             return;
         }
         String prefix = event.prefix;

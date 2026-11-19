@@ -72,6 +72,11 @@ public class BlockStateInterface {
         return loadedChunk(blockX >> 4, blockZ >> 4) != null;
     }
 
+    public int loadedSurfaceHeight(int x, int z) {
+        Chunk chunk = loadedChunk(x >> 4, z >> 4);
+        return chunk == null ? -1 : chunk.getHeightValue(x & 15, z & 15);
+    }
+
     public static Block getBlock(IPlayerContext ctx, BetterBlockPos pos) {
         return get(ctx, pos).getBlock();
     }

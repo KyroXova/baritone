@@ -683,6 +683,12 @@ public final class Settings {
      */
     public final Setting<Boolean> chatControl = new Setting<>(true);
 
+    /** Restrict horizontal exploration to the vicinity of loaded terrain surfaces. */
+    public final Setting<Boolean> surfaceOnly = new Setting<>(false);
+
+    /** Disable chat-driven commands for applications embedding Baritone. */
+    public final Setting<Boolean> embeddedChatDisabled = new Setting<>(false);
+
     /**
      * Some clients like Impact try to force chatControl to off, so here's a second setting to do it anyway
      */

@@ -120,6 +120,10 @@ public final class AStarPathFinder extends AbstractNodeCostSearch {
                 if (actionCost >= ActionCosts.COST_INF) {
                     continue;
                 }
+                if (calcContext.surfaceOnly) {
+                    int surface = calcContext.bsi.loadedSurfaceHeight(res.x, res.z);
+                    if (!SurfaceTravelPolicy.allowed(surface, res.y)) continue;
+                }
                 if (actionCost <= 0 || Double.isNaN(actionCost)) {
                     throw new IllegalStateException(String.format(
                             "%s from %s %s %s calculated implausible cost %s",

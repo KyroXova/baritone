@@ -46,6 +46,7 @@ import static baritone.api.pathing.movement.ActionCosts.COST_INF;
 public class CalculationContext {
 
     public final boolean safeForThreadedUse;
+    public final boolean surfaceOnly;
     public final IBaritone baritone;
     public final World world;
     public final WorldData worldData;
@@ -99,6 +100,7 @@ public class CalculationContext {
 
     public CalculationContext(IBaritone baritone, boolean forUseOnAnotherThread, boolean forbidBreaking, boolean allowPlacement, GoalBlock protectedPlacementGoal) {
         this.protectedPlacementGoal = protectedPlacementGoal;
+        this.surfaceOnly = Baritone.settings().surfaceOnly.value;
         this.precomputedData = new PrecomputedData();
         this.safeForThreadedUse = forUseOnAnotherThread;
         this.baritone = baritone;
