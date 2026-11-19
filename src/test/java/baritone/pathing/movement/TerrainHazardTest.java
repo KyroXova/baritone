@@ -38,4 +38,14 @@ public class TerrainHazardTest {
         assertTrue(MovementHelper.isHazardNeighbor(new BlockState(new QuicksandBlock(), 0)));
         assertFalse(MovementHelper.isHazardNeighbor(new BlockState(new Block(Material.rock) {}, 0)));
     }
+
+    private static class TestLilyPad extends net.minecraft.block.BlockLilyPad {
+        TestLilyPad() { super(); }
+    }
+
+    @Test
+    public void lilyPadIsWalkable() {
+        BlockState state = new BlockState(new TestLilyPad(), 0);
+        assertEquals(Ternary.YES, LegacyMovementRules.canWalkOnBlockState(state));
+    }
 }

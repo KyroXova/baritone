@@ -72,7 +72,8 @@ public final class LegacyMovementRules {
         if (LegacyBlockRules.isTerrainHazard(state)) return NO;
         if (LegacyBlockRules.isWater(state)) return MAYBE;
         if (block.getMaterial() == Material.lava) return Baritone.settings().assumeWalkOnLava.value ? MAYBE : NO;
-        if (block == Blocks.ladder || (block == Blocks.vine && Baritone.settings().allowVines.value)
+        if (block == Blocks.waterlily || block instanceof net.minecraft.block.BlockLilyPad
+                || block == Blocks.ladder || (block == Blocks.vine && Baritone.settings().allowVines.value)
                 || block == Blocks.farmland || block == Blocks.soul_sand
                 || block == Blocks.chest || block == Blocks.trapped_chest || block == Blocks.ender_chest
                 || block == Blocks.glass || block == Blocks.stained_glass || block instanceof BlockStairs) return YES;
