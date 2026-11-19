@@ -72,7 +72,9 @@ public final class LegacyMovementRules {
         if (LegacyBlockRules.isTerrainHazard(state)) return NO;
         if (LegacyBlockRules.isWater(state)) return MAYBE;
         if (block.getMaterial() == Material.lava) return Baritone.settings().assumeWalkOnLava.value ? MAYBE : NO;
-        if (block == Blocks.snow || block == Blocks.snow_layer || block == Blocks.waterlily || block instanceof net.minecraft.block.BlockLilyPad
+        if (block == Blocks.snow || block == Blocks.snow_layer
+                || block.getMaterial() == Material.ice || block == Blocks.ice || block == Blocks.packed_ice
+                || block == Blocks.waterlily || block instanceof net.minecraft.block.BlockLilyPad
                 || block == Blocks.ladder || (block == Blocks.vine && Baritone.settings().allowVines.value)
                 || block == Blocks.farmland || block == Blocks.soul_sand
                 || block == Blocks.chest || block == Blocks.trapped_chest || block == Blocks.ender_chest
@@ -86,6 +88,9 @@ public final class LegacyMovementRules {
     public static boolean canWalkOnPosition(BlockStateInterface bsi, int x, int y, int z, BlockState state) {
         if (state.getBlock().getMaterial() == Material.leaves) {
             return bsi.hasFullTopCollision(x, y, z, state);
+        }
+        if (state.getBlock().getMaterial() == Material.ice || state.getBlock() == Blocks.ice || state.getBlock() == Blocks.packed_ice) {
+            return true;
         }
         if (LegacyBlockRules.isWater(state)) {
             BlockState above = bsi.get0(x, y + 1, z);
