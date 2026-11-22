@@ -46,7 +46,7 @@ public final class LegacyBlockRules {
     }
 
     static Boolean metadataHazard(String type, int metadata) {
-        if ("biomesoplenty.common.blocks.BlockMud".equals(type)) return metadata == 1;
+        if ("biomesoplenty.common.blocks.BlockMud".equals(type)) return metadata == 0 || metadata == 1;
         if ("biomesoplenty.common.blocks.BlockBOPPlant".equals(type)) return metadata == 5 || metadata == 12;
         if ("biomesoplenty.common.blocks.BlockBOPFlower".equals(type)) return metadata == 2;
         if ("biomesoplenty.common.blocks.BlockBOPFoliage".equals(type)) return metadata == 7;

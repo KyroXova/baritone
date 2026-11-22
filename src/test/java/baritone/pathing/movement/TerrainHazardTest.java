@@ -24,7 +24,7 @@ public class TerrainHazardTest {
     @Test
     public void biomesOPlentyHazardsUseMetadata() {
         assertEquals(Boolean.TRUE, LegacyBlockRules.metadataHazard("biomesoplenty.common.blocks.BlockMud", 1));
-        assertEquals(Boolean.FALSE, LegacyBlockRules.metadataHazard("biomesoplenty.common.blocks.BlockMud", 0));
+        assertEquals(Boolean.TRUE, LegacyBlockRules.metadataHazard("biomesoplenty.common.blocks.BlockMud", 0));
         assertEquals(Boolean.TRUE, LegacyBlockRules.metadataHazard("biomesoplenty.common.blocks.BlockBOPPlant", 5));
         assertEquals(Boolean.FALSE, LegacyBlockRules.metadataHazard("biomesoplenty.common.blocks.BlockBOPPlant", 0));
         assertTrue(LegacyBlockRules.hazardName("example:berrybush"));
