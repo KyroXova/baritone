@@ -32,13 +32,18 @@ import net.minecraft.init.Blocks;
 
 import java.util.ArrayList;
 import java.util.OptionalInt;
-import java.util.Random;
 import java.util.function.Predicate;
 
 public final class InventoryBehavior extends Behavior implements Helper {
 
     int ticksSinceLastInventoryMove;
     int[] lastTickRequestedMove; // not everything asks every tick, so remember the request while coming to a halt
+    private int temporaryBlockInventorySlot = -1;
+    private int temporaryBlockHotbarSlot = -1;
+    private int temporaryBlockLastUsedTick;
+    private ItemStack temporaryDisplacedStack;
+    private Object temporaryBlockWorld;
+    private int tickCounter;
 
     public InventoryBehavior(Baritone baritone) {
         super(baritone);
@@ -46,19 +51,17 @@ public final class InventoryBehavior extends Behavior implements Helper {
 
     @Override
     public void onTick(TickEvent event) {
+        if (event.getType() == TickEvent.Type.OUT) return;
+        tickCounter++;
+        ticksSinceLastInventoryMove++;
         if (!Baritone.settings().allowInventory.value) {
+            restoreTemporaryBlock();
             return;
         }
-        if (event.getType() == TickEvent.Type.OUT) {
-            return;
-        }
+        if (temporaryBlockHotbarSlot >= 0 && tickCounter - temporaryBlockLastUsedTick > 3) restoreTemporaryBlock();
         if (ctx.player().openContainer != ctx.player().inventoryContainer) {
             // we have a crafting table or a chest or something open
             return;
-        }
-        ticksSinceLastInventoryMove++;
-        if (firstValidThrowaway() >= 9) { // aka there are none on the hotbar, but there are some in main inventory
-            requestSwapWithHotBar(firstValidThrowaway(), 8);
         }
         int pick = bestToolAgainst(Blocks.stone);
         if (pick >= 9) {
@@ -80,16 +83,16 @@ public final class InventoryBehavior extends Behavior implements Helper {
 
     public boolean attemptToPutOnHotbar(int inMainInvy, Predicate<Integer> disallowedHotbar) {
         OptionalInt destination = getTempHotbarSlot(disallowedHotbar);
-        if (destination.isPresent()) {
-            if (!requestSwapWithHotBar(inMainInvy, destination.getAsInt())) {
-                return false;
-            }
-        }
-        return true;
+        if (!destination.isPresent()) return false;
+        ItemStack moving = ctx.player().inventory.mainInventory[inMainInvy];
+        boolean moved = moving != null && moving.getItem() instanceof ItemBlock
+                ? moveBlockTemporarily(inMainInvy, destination.getAsInt())
+                : requestSwapWithHotBar(inMainInvy, destination.getAsInt());
+        return moved;
     }
 
     public OptionalInt getTempHotbarSlot(Predicate<Integer> disallowedHotbar) {
-        // we're using 0 and 8 for pickaxe and throwaway
+        // Keep Baritone's tool slots clear and never displace tools or non-block items.
         ArrayList<Integer> candidates = new ArrayList<>();
         for (int i = 1; i < 8; i++) {
             if (ctx.player().inventory.mainInventory[i] == null && !disallowedHotbar.test(i)) {
@@ -98,18 +101,88 @@ public final class InventoryBehavior extends Behavior implements Helper {
         }
         if (candidates.isEmpty()) {
             for (int i = 1; i < 8; i++) {
-                if (!disallowedHotbar.test(i)) {
+                ItemStack stack = ctx.player().inventory.mainInventory[i];
+                if (!disallowedHotbar.test(i) && isSafelyDisplaceable(stack)) {
                     candidates.add(i);
                 }
             }
         }
+        if (candidates.isEmpty() && !disallowedHotbar.test(8)
+                && isSafelyDisplaceable(ctx.player().inventory.mainInventory[8])) {
+            candidates.add(8);
+        }
         if (candidates.isEmpty()) {
             return OptionalInt.empty();
         }
-        return OptionalInt.of(candidates.get(new Random().nextInt(candidates.size())));
+        return OptionalInt.of(candidates.get(0));
+    }
+
+    private boolean isSafelyDisplaceable(ItemStack stack) {
+        if (stack == null) return true;
+        if (!(stack.getItem() instanceof ItemBlock)) return false;
+        Block block = ((ItemBlock) stack.getItem()).field_150939_a;
+        return Baritone.settings().acceptableThrowawayItems.value.contains(stack.getItem())
+                || block == Blocks.stone || block == Blocks.cobblestone || block == Blocks.dirt
+                || block == Blocks.netherrack;
+    }
+
+    private boolean moveBlockTemporarily(int inventorySlot, int hotbarSlot) {
+        ItemStack source = ctx.player().inventory.mainInventory[inventorySlot];
+        if (source == null || !(source.getItem() instanceof ItemBlock)) return false;
+        if (temporaryBlockHotbarSlot >= 0) {
+            if (temporaryBlockInventorySlot == inventorySlot && temporaryBlockHotbarSlot == hotbarSlot) {
+                temporaryBlockLastUsedTick = tickCounter;
+                return true;
+            }
+            restoreTemporaryBlock();
+            if (temporaryBlockHotbarSlot >= 0) return false;
+        }
+        if (!requestSwapWithHotBar(inventorySlot, hotbarSlot)) return false;
+        temporaryBlockInventorySlot = inventorySlot;
+        temporaryBlockHotbarSlot = hotbarSlot;
+        ItemStack displaced = ctx.player().inventory.mainInventory[inventorySlot];
+        temporaryDisplacedStack = displaced == null ? null : displaced.copy();
+        temporaryBlockWorld = ctx.world();
+        temporaryBlockLastUsedTick = tickCounter;
+        return true;
+    }
+
+    public void markTemporaryBlockUsed(int hotbarSlot) {
+        if (temporaryBlockHotbarSlot == hotbarSlot) temporaryBlockLastUsedTick = tickCounter;
+    }
+
+    private void restoreTemporaryBlock() {
+        if (temporaryBlockHotbarSlot < 0) return;
+        if (ctx.player() == null || ctx.world() == null || temporaryBlockWorld != ctx.world()) {
+            clearTemporaryBlock();
+            return;
+        }
+        if (ctx.player().openContainer != ctx.player().inventoryContainer) return;
+        int inventorySlot = temporaryBlockInventorySlot;
+        int hotbarSlot = temporaryBlockHotbarSlot;
+        ItemStack source = ctx.player().inventory.mainInventory[inventorySlot];
+        // Reverse only while the original displaced stack is still in its expected slot.
+        if (sameStack(source, temporaryDisplacedStack) && requestSwapWithHotBar(inventorySlot, hotbarSlot)) {
+            clearTemporaryBlock();
+        }
+    }
+
+    private boolean sameStack(ItemStack left, ItemStack right) {
+        if (left == null || right == null) return left == right;
+        return left.getItem() == right.getItem() && left.getItemDamage() == right.getItemDamage()
+                && left.stackSize == right.stackSize;
+    }
+
+    private void clearTemporaryBlock() {
+        temporaryBlockInventorySlot = -1;
+        temporaryBlockHotbarSlot = -1;
+        temporaryDisplacedStack = null;
+        temporaryBlockWorld = null;
     }
 
     private boolean requestSwapWithHotBar(int inInventory, int inHotbar) {
+        if (ctx.player() == null || ctx.player().openContainer != ctx.player().inventoryContainer
+                || ctx.player().inventory.getItemStack() != null) return false;
         lastTickRequestedMove = new int[]{inInventory, inHotbar};
         if (ticksSinceLastInventoryMove < Baritone.settings().ticksBetweenInventoryMoves.value) {
             logDebug("Inventory move requested but delaying " + ticksSinceLastInventoryMove + " " + Baritone.settings().ticksBetweenInventoryMoves.value);
@@ -123,16 +196,6 @@ public final class InventoryBehavior extends Behavior implements Helper {
         ticksSinceLastInventoryMove = 0;
         lastTickRequestedMove = null;
         return true;
-    }
-
-    private int firstValidThrowaway() {
-        ItemStack[] invy = ctx.player().inventory.mainInventory;
-        for (int i = 0; i < invy.length; i++) {
-            if (invy[i] != null && Baritone.settings().acceptableThrowawayItems.value.contains(invy[i].getItem())) {
-                return i;
-            }
-        }
-        return -1;
     }
 
     private int bestToolAgainst(Block against) {
@@ -220,6 +283,7 @@ public final class InventoryBehavior extends Behavior implements Helper {
             // since this function is never called during cost calculation, we don't need to migrate
             // acceptableThrowawayItems to the CalculationContext
             if (item != null && desired.test(item)) {
+                markTemporaryBlockUsed(i);
                 if (select) {
                     p.inventory.currentItem = i;
                 }
@@ -230,9 +294,11 @@ public final class InventoryBehavior extends Behavior implements Helper {
             for (int i = 9; i < 36; i++) {
                 if (inv[i] != null && desired.test(inv[i])) {
                     if (select) {
-                        if (!requestSwapWithHotBar(i, 7)) return false;
-                        p.inventory.currentItem = 7;
+                        OptionalInt destination = getTempHotbarSlot(slot -> false);
+                        if (!destination.isPresent() || !moveBlockTemporarily(i, destination.getAsInt())) return false;
+                        p.inventory.currentItem = destination.getAsInt();
                     }
+                    if (temporaryBlockHotbarSlot >= 0) temporaryBlockLastUsedTick = tickCounter;
                     return true;
                 }
             }

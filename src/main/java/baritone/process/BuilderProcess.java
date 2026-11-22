@@ -542,6 +542,7 @@ public final class BuilderProcess extends BaritoneProcessHelper implements IBuil
         if (toPlace.isPresent() && isSafeToCancel && ctx.player().onGround && ticks <= 0) {
             Rotation rot = toPlace.get().rot;
             baritone.getLookBehavior().updateTarget(rot, true);
+            baritone.getInventoryBehavior().markTemporaryBlockUsed(toPlace.get().hotbarSelection);
             ctx.player().inventory.currentItem = toPlace.get().hotbarSelection;
             baritone.getInputOverrideHandler().setInputForceState(Input.SNEAK, true);
             MovingObjectPosition mo = ctx.objectMouseOver();
