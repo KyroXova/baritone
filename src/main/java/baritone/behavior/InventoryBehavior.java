@@ -38,6 +38,7 @@ public final class InventoryBehavior extends Behavior implements Helper {
 
     int ticksSinceLastInventoryMove;
     int[] lastTickRequestedMove; // not everything asks every tick, so remember the request while coming to a halt
+    private boolean lastTickRequestedTemporaryBlock;
     private int temporaryBlockInventorySlot = -1;
     private int temporaryBlockHotbarSlot = -1;
     private int temporaryBlockLastUsedTick;
@@ -55,6 +56,10 @@ public final class InventoryBehavior extends Behavior implements Helper {
         tickCounter++;
         ticksSinceLastInventoryMove++;
         if (!Baritone.settings().allowInventory.value) {
+            if (lastTickRequestedTemporaryBlock) {
+                lastTickRequestedMove = null;
+                lastTickRequestedTemporaryBlock = false;
+            }
             restoreTemporaryBlock();
             return;
         }
@@ -77,7 +82,9 @@ public final class InventoryBehavior extends Behavior implements Helper {
         }
         if (lastTickRequestedMove != null) {
             logDebug("Remembering to move " + lastTickRequestedMove[0] + " " + lastTickRequestedMove[1] + " from a previous tick");
-            requestSwapWithHotBar(lastTickRequestedMove[0], lastTickRequestedMove[1]);
+            int[] pendingMove = lastTickRequestedMove;
+            boolean temporaryBlock = lastTickRequestedTemporaryBlock;
+            requestSwapWithHotBar(pendingMove[0], pendingMove[1], temporaryBlock);
         }
     }
 
@@ -137,14 +144,7 @@ public final class InventoryBehavior extends Behavior implements Helper {
             restoreTemporaryBlock();
             if (temporaryBlockHotbarSlot >= 0) return false;
         }
-        if (!requestSwapWithHotBar(inventorySlot, hotbarSlot)) return false;
-        temporaryBlockInventorySlot = inventorySlot;
-        temporaryBlockHotbarSlot = hotbarSlot;
-        ItemStack displaced = ctx.player().inventory.mainInventory[inventorySlot];
-        temporaryDisplacedStack = displaced == null ? null : displaced.copy();
-        temporaryBlockWorld = ctx.world();
-        temporaryBlockLastUsedTick = tickCounter;
-        return true;
+        return requestSwapWithHotBar(inventorySlot, hotbarSlot, true);
     }
 
     public void markTemporaryBlockUsed(int hotbarSlot) {
@@ -181,9 +181,14 @@ public final class InventoryBehavior extends Behavior implements Helper {
     }
 
     private boolean requestSwapWithHotBar(int inInventory, int inHotbar) {
+        return requestSwapWithHotBar(inInventory, inHotbar, false);
+    }
+
+    private boolean requestSwapWithHotBar(int inInventory, int inHotbar, boolean temporaryBlock) {
         if (ctx.player() == null || ctx.player().openContainer != ctx.player().inventoryContainer
                 || ctx.player().inventory.getItemStack() != null) return false;
         lastTickRequestedMove = new int[]{inInventory, inHotbar};
+        lastTickRequestedTemporaryBlock = temporaryBlock;
         if (ticksSinceLastInventoryMove < Baritone.settings().ticksBetweenInventoryMoves.value) {
             logDebug("Inventory move requested but delaying " + ticksSinceLastInventoryMove + " " + Baritone.settings().ticksBetweenInventoryMoves.value);
             return false;
@@ -195,6 +200,15 @@ public final class InventoryBehavior extends Behavior implements Helper {
         ctx.playerController().windowClick(ctx.player().inventoryContainer.windowId, inInventory < 9 ? inInventory + 36 : inInventory, inHotbar, 2, ctx.player());
         ticksSinceLastInventoryMove = 0;
         lastTickRequestedMove = null;
+        lastTickRequestedTemporaryBlock = false;
+        if (temporaryBlock) {
+            temporaryBlockInventorySlot = inInventory;
+            temporaryBlockHotbarSlot = inHotbar;
+            ItemStack displaced = ctx.player().inventory.mainInventory[inInventory];
+            temporaryDisplacedStack = displaced == null ? null : displaced.copy();
+            temporaryBlockWorld = ctx.world();
+            temporaryBlockLastUsedTick = tickCounter;
+        }
         return true;
     }
 
